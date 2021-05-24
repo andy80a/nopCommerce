@@ -467,6 +467,45 @@ namespace Nop.Services.Orders
                                     }
                                 }
                             }
+
+                            if (warnings.Any())
+                                return warnings;
+
+                            //validate product quantity and product quantity into bundles
+                            if (string.IsNullOrEmpty(attributesXml))
+                            {
+                                var cart = await GetShoppingCartAsync(customer, shoppingCartType, storeId);
+                                var totalQuantityInCart = cart.Where(item => item.ProductId == product.Id && string.IsNullOrEmpty(item.AttributesXml))
+                                    .Sum(product => product.Quantity);
+
+                                foreach (var bundle in cart.Where(x => !string.IsNullOrEmpty(x.AttributesXml)))
+                                {
+                                    var attributeValues = await _productAttributeParser.ParseProductAttributeValuesAsync(bundle.AttributesXml);
+                                    foreach (var attributeValue in attributeValues)
+                                    {
+                                        if (attributeValue.AttributeValueType != AttributeValueType.AssociatedToProduct)
+                                            continue;
+
+                                        var associatedProduct = await _productService.GetProductByIdAsync(attributeValue.AssociatedProductId);
+                                        if (associatedProduct?.Id == product.Id)
+                                            totalQuantityInCart += bundle.Quantity * attributeValue.Quantity;
+                                    }
+                                }
+
+                                if (maximumQuantityCanBeAdded < totalQuantityInCart)
+                                {
+                                    if (maximumQuantityCanBeAdded <= 0)
+                                    {
+                                        var productAvailabilityRange = await _dateRangeService.GetProductAvailabilityRangeByIdAsync(product.ProductAvailabilityRangeId);
+                                        var warning = productAvailabilityRange == null ? await _localizationService.GetResourceAsync("ShoppingCart.OutOfStock")
+                                            : string.Format(await _localizationService.GetResourceAsync("ShoppingCart.AvailabilityRange"),
+                                                await _localizationService.GetLocalizedAsync(productAvailabilityRange, range => range.Name));
+                                        warnings.Add(warning);
+                                    }
+                                    else
+                                        warnings.Add(string.Format(await _localizationService.GetResourceAsync("ShoppingCart.QuantityExceedsStock"), maximumQuantityCanBeAdded));
+                                }
+                            }
                         }
 
                         break;
