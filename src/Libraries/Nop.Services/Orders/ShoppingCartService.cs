@@ -411,7 +411,7 @@ namespace Nop.Services.Orders
                         {
                             var maximumQuantityCanBeAdded = await _productService.GetTotalStockQuantityAsync(product);
 
-                            warnings.AddRange(await GetQuantityProductWarningsAync(product, quantity, maximumQuantityCanBeAdded));
+                            warnings.AddRange(await GetQuantityProductWarningsAsync(product, quantity, maximumQuantityCanBeAdded));
 
                             if (warnings.Any())
                                 return warnings;
@@ -425,23 +425,23 @@ namespace Nop.Services.Orders
                                 {
                                     var cart = await GetShoppingCartAsync(customer, shoppingCartType, storeId);
                                     var totalAddedQuantity = cart
-                                        .Where(item => item.ProductId == product.Id)
+                                        .Where(item => item.ProductId == product.Id && item.Id != shoppingCartItemId)
                                         .Sum(product => product.Quantity);
 
-                                    var alreadyExistedItem = cart.FirstOrDefault(item => item.Id == shoppingCartItemId);
-                                    if (alreadyExistedItem == null)
+                                    totalAddedQuantity += quantity;
+
+                                    //counting a product into bundles
+                                    foreach (var bundle in cart.Where(x => x.Id != shoppingCartItemId && !string.IsNullOrEmpty(x.AttributesXml)))
                                     {
-                                        //it's new item
-                                        totalAddedQuantity += quantity;
-                                    }
-                                    else
-                                    {
-                                        //it's existing item, then add to total the added quantity only
-                                        if (quantity > alreadyExistedItem.Quantity)
-                                            totalAddedQuantity += quantity - alreadyExistedItem.Quantity;
+                                        var attributeValues = await _productAttributeParser.ParseProductAttributeValuesAsync(bundle.AttributesXml);
+                                        foreach (var attributeValue in attributeValues)
+                                        {
+                                            if (attributeValue.AttributeValueType == AttributeValueType.AssociatedToProduct && attributeValue.AssociatedProductId == product.Id)
+                                                totalAddedQuantity += bundle.Quantity * attributeValue.Quantity;
+                                        }
                                     }
 
-                                    warnings.AddRange(await GetQuantityProductWarningsAync(product, totalAddedQuantity, maximumQuantityCanBeAdded));
+                                    warnings.AddRange(await GetQuantityProductWarningsAsync(product, totalAddedQuantity, maximumQuantityCanBeAdded));
                                 }
                             }
 
@@ -455,7 +455,7 @@ namespace Nop.Services.Orders
                                 var totalQuantityInCart = cart.Where(item => item.ProductId == product.Id && string.IsNullOrEmpty(item.AttributesXml))
                                     .Sum(product => product.Quantity);
 
-                                foreach (var bundle in cart.Where(x => !string.IsNullOrEmpty(x.AttributesXml)))
+                                foreach (var bundle in cart.Where(x => x.Id != shoppingCartItemId && !string.IsNullOrEmpty(x.AttributesXml)))
                                 {
                                     var attributeValues = await _productAttributeParser.ParseProductAttributeValuesAsync(bundle.AttributesXml);
                                     foreach (var attributeValue in attributeValues)
@@ -465,7 +465,7 @@ namespace Nop.Services.Orders
                                     }
                                 }
 
-                                warnings.AddRange(await GetQuantityProductWarningsAync(product, totalQuantityInCart, maximumQuantityCanBeAdded));
+                                warnings.AddRange(await GetQuantityProductWarningsAsync(product, totalQuantityInCart, maximumQuantityCanBeAdded));
                             }
                         }
 
@@ -477,7 +477,7 @@ namespace Nop.Services.Orders
                             //combination exists
                             //let's check stock level
                             if (!combination.AllowOutOfStockOrders)
-                                warnings.AddRange(await GetQuantityProductWarningsAync(product, quantity, combination.StockQuantity));
+                                warnings.AddRange(await GetQuantityProductWarningsAsync(product, quantity, combination.StockQuantity));
                         }
                         else
                         {
@@ -533,7 +533,7 @@ namespace Nop.Services.Orders
         /// A task that represents the asynchronous operation
         /// The task result contains the warnings 
         /// </returns>
-        protected virtual async Task<IList<string>> GetQuantityProductWarningsAync(Product product, int quantity, int maximumQuantityCanBeAdded)
+        protected virtual async Task<IList<string>> GetQuantityProductWarningsAsync(Product product, int quantity, int maximumQuantityCanBeAdded)
         {
             if (product == null)
                 throw new ArgumentNullException(nameof(product));
@@ -749,6 +749,7 @@ namespace Nop.Services.Orders
         /// <param name="attributesXml">Attributes in XML format</param>
         /// <param name="ignoreNonCombinableAttributes">A value indicating whether we should ignore non-combinable attributes</param>
         /// <param name="ignoreConditionMet">A value indicating whether we should ignore filtering by "is condition met" property</param>
+        /// <param name="shoppingCartItemId">Shopping cart identifier; pass 0 if it's a new item</param>
         /// <returns>
         /// A task that represents the asynchronous operation
         /// The task result contains the warnings
@@ -759,7 +760,7 @@ namespace Nop.Services.Orders
             int quantity = 1,
             string attributesXml = "",
             bool ignoreNonCombinableAttributes = false,
-            bool ignoreConditionMet = false)
+            bool ignoreConditionMet = false, int shoppingCartItemId = 0)
         {
             if (product == null)
                 throw new ArgumentNullException(nameof(product));
@@ -926,7 +927,7 @@ namespace Nop.Services.Orders
                     var totalQty = quantity * attributeValue.Quantity;
                     var associatedProductWarnings = await GetShoppingCartItemWarningsAsync(customer,
                         shoppingCartType, associatedProduct, (await _storeContext.GetCurrentStoreAsync()).Id,
-                        string.Empty, decimal.Zero, null, null, totalQty, false);
+                        string.Empty, decimal.Zero, null, null, totalQty, false, shoppingCartItemId);
 
                     var productAttribute = await _productAttributeService.GetProductAttributeByIdAsync(productAttributeMapping.ProductAttributeId);
 
@@ -1096,7 +1097,7 @@ namespace Nop.Services.Orders
 
             //selected attributes
             if (getAttributesWarnings)
-                warnings.AddRange(await GetShoppingCartItemAttributeWarningsAsync(customer, shoppingCartType, product, quantity, attributesXml));
+                warnings.AddRange(await GetShoppingCartItemAttributeWarningsAsync(customer, shoppingCartType, product, quantity, attributesXml, false, false, shoppingCartItemId));
 
             //gift cards
             if (getGiftCardWarnings)
