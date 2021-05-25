@@ -410,19 +410,8 @@ namespace Nop.Services.Orders
                         if (product.BackorderMode == BackorderMode.NoBackorders)
                         {
                             var maximumQuantityCanBeAdded = await _productService.GetTotalStockQuantityAsync(product);
-                            if (maximumQuantityCanBeAdded < quantity)
-                            {
-                                if (maximumQuantityCanBeAdded <= 0)
-                                {
-                                    var productAvailabilityRange = await _dateRangeService.GetProductAvailabilityRangeByIdAsync(product.ProductAvailabilityRangeId);
-                                    var warning = productAvailabilityRange == null ? await _localizationService.GetResourceAsync("ShoppingCart.OutOfStock")
-                                        : string.Format(await _localizationService.GetResourceAsync("ShoppingCart.AvailabilityRange"),
-                                            await _localizationService.GetLocalizedAsync(productAvailabilityRange, range => range.Name));
-                                    warnings.Add(warning);
-                                }
-                                else
-                                    warnings.Add(string.Format(await _localizationService.GetResourceAsync("ShoppingCart.QuantityExceedsStock"), maximumQuantityCanBeAdded));
-                            }
+
+                            warnings.AddRange(await GetQuantityProductWarningsAync(product, quantity, maximumQuantityCanBeAdded));
 
                             if (warnings.Any())
                                 return warnings;
@@ -452,19 +441,7 @@ namespace Nop.Services.Orders
                                             totalAddedQuantity += quantity - alreadyExistedItem.Quantity;
                                     }
 
-                                    if (maximumQuantityCanBeAdded < totalAddedQuantity)
-                                    {
-                                        if (maximumQuantityCanBeAdded <= 0)
-                                        {
-                                            var productAvailabilityRange = await _dateRangeService.GetProductAvailabilityRangeByIdAsync(product.ProductAvailabilityRangeId);
-                                            var warning = productAvailabilityRange == null ? await _localizationService.GetResourceAsync("ShoppingCart.OutOfStock")
-                                                : string.Format(await _localizationService.GetResourceAsync("ShoppingCart.AvailabilityRange"),
-                                                    await _localizationService.GetLocalizedAsync(productAvailabilityRange, range => range.Name));
-                                            warnings.Add(warning);
-                                        }
-                                        else
-                                            warnings.Add(string.Format(await _localizationService.GetResourceAsync("ShoppingCart.QuantityExceedsStock"), maximumQuantityCanBeAdded));
-                                    }
+                                    warnings.AddRange(await GetQuantityProductWarningsAync(product, totalAddedQuantity, maximumQuantityCanBeAdded));
                                 }
                             }
 
@@ -483,28 +460,12 @@ namespace Nop.Services.Orders
                                     var attributeValues = await _productAttributeParser.ParseProductAttributeValuesAsync(bundle.AttributesXml);
                                     foreach (var attributeValue in attributeValues)
                                     {
-                                        if (attributeValue.AttributeValueType != AttributeValueType.AssociatedToProduct)
-                                            continue;
-
-                                        var associatedProduct = await _productService.GetProductByIdAsync(attributeValue.AssociatedProductId);
-                                        if (associatedProduct?.Id == product.Id)
+                                        if (attributeValue.AttributeValueType == AttributeValueType.AssociatedToProduct && attributeValue.AssociatedProductId == product.Id)
                                             totalQuantityInCart += bundle.Quantity * attributeValue.Quantity;
                                     }
                                 }
 
-                                if (maximumQuantityCanBeAdded < totalQuantityInCart)
-                                {
-                                    if (maximumQuantityCanBeAdded <= 0)
-                                    {
-                                        var productAvailabilityRange = await _dateRangeService.GetProductAvailabilityRangeByIdAsync(product.ProductAvailabilityRangeId);
-                                        var warning = productAvailabilityRange == null ? await _localizationService.GetResourceAsync("ShoppingCart.OutOfStock")
-                                            : string.Format(await _localizationService.GetResourceAsync("ShoppingCart.AvailabilityRange"),
-                                                await _localizationService.GetLocalizedAsync(productAvailabilityRange, range => range.Name));
-                                        warnings.Add(warning);
-                                    }
-                                    else
-                                        warnings.Add(string.Format(await _localizationService.GetResourceAsync("ShoppingCart.QuantityExceedsStock"), maximumQuantityCanBeAdded));
-                                }
+                                warnings.AddRange(await GetQuantityProductWarningsAync(product, totalQuantityInCart, maximumQuantityCanBeAdded));
                             }
                         }
 
@@ -515,22 +476,8 @@ namespace Nop.Services.Orders
                         {
                             //combination exists
                             //let's check stock level
-                            if (!combination.AllowOutOfStockOrders && combination.StockQuantity < quantity)
-                            {
-                                var maximumQuantityCanBeAdded = combination.StockQuantity;
-                                if (maximumQuantityCanBeAdded <= 0)
-                                {
-                                    var productAvailabilityRange = await _dateRangeService.GetProductAvailabilityRangeByIdAsync(product.ProductAvailabilityRangeId);
-                                    var warning = productAvailabilityRange == null ? await _localizationService.GetResourceAsync("ShoppingCart.OutOfStock")
-                                        : string.Format(await _localizationService.GetResourceAsync("ShoppingCart.AvailabilityRange"),
-                                            await _localizationService.GetLocalizedAsync(productAvailabilityRange, range => range.Name));
-                                    warnings.Add(warning);
-                                }
-                                else
-                                {
-                                    warnings.Add(string.Format(await _localizationService.GetResourceAsync("ShoppingCart.QuantityExceedsStock"), maximumQuantityCanBeAdded));
-                                }
-                            }
+                            if (!combination.AllowOutOfStockOrders)
+                                warnings.AddRange(await GetQuantityProductWarningsAync(product, quantity, combination.StockQuantity));
                         }
                         else
                         {
@@ -571,6 +518,40 @@ namespace Nop.Services.Orders
             if (availableEndDateTime.CompareTo(DateTime.UtcNow) < 0)
             {
                 warnings.Add(await _localizationService.GetResourceAsync("ShoppingCart.NotAvailable"));
+            }
+
+            return warnings;
+        }
+
+        /// <summary>
+        /// Validates the maximum quantity a product can be added 
+        /// </summary>
+        /// <param name="product">Product</param>
+        /// <param name="quantity">Quantity</param>
+        /// <param name="maximumQuantityCanBeAdded">The maximum quantity a product can be added</param>
+        /// <returns>
+        /// A task that represents the asynchronous operation
+        /// The task result contains the warnings 
+        /// </returns>
+        protected virtual async Task<IList<string>> GetQuantityProductWarningsAync(Product product, int quantity, int maximumQuantityCanBeAdded)
+        {
+            if (product == null)
+                throw new ArgumentNullException(nameof(product));
+
+            var warnings = new List<string>();
+
+            if (maximumQuantityCanBeAdded < quantity)
+            {
+                if (maximumQuantityCanBeAdded <= 0)
+                {
+                    var productAvailabilityRange = await _dateRangeService.GetProductAvailabilityRangeByIdAsync(product.ProductAvailabilityRangeId);
+                    var warning = productAvailabilityRange == null ? await _localizationService.GetResourceAsync("ShoppingCart.OutOfStock")
+                        : string.Format(await _localizationService.GetResourceAsync("ShoppingCart.AvailabilityRange"),
+                            await _localizationService.GetLocalizedAsync(productAvailabilityRange, range => range.Name));
+                    warnings.Add(warning);
+                }
+                else
+                    warnings.Add(string.Format(await _localizationService.GetResourceAsync("ShoppingCart.QuantityExceedsStock"), maximumQuantityCanBeAdded));
             }
 
             return warnings;
