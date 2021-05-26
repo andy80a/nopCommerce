@@ -143,6 +143,28 @@ namespace Nop.Services.Messages
         }
 
         /// <summary>
+        /// Gets all message templates
+        /// </summary>
+        /// <param name="storeId">Store identifier; pass 0 to load all records</param>
+        /// <param name="keywords">Keywords to search body or subject</param>
+        /// <returns>
+        /// A task that represents the asynchronous operation
+        /// The task result contains the message template list
+        /// </returns>
+        public virtual async Task<IList<MessageTemplate>> GetAllMessageTemplatesAsync(int storeId = 0, string keywords = null)
+        {
+            var messageTemplates = await GetAllMessageTemplatesAsync(storeId);
+
+            if (!string.IsNullOrWhiteSpace(keywords))
+            {
+                messageTemplates = messageTemplates.Where(x => (x.Subject?.Contains(keywords, StringComparison.InvariantCultureIgnoreCase) ?? false)
+                    || (x.Body?.Contains(keywords, StringComparison.InvariantCultureIgnoreCase) ?? false)).ToList();
+            }
+
+            return messageTemplates;
+        }
+
+        /// <summary>
         /// Create a copy of message template with all depended data
         /// </summary>
         /// <param name="messageTemplate">Message template</param>

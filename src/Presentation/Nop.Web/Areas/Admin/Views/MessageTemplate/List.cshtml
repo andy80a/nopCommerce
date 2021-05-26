@@ -81,6 +81,7 @@
                         LengthMenu = Model.AvailablePageSizes,
                         Filters = new List<FilterParameter>
                         {
+                            new FilterParameter(nameof(Model.SearchKeywords)),
                             new FilterParameter(nameof(Model.SearchStoreId))
                         },
                         ColumnCollection = new List<ColumnProperty>

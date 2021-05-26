@@ -62,6 +62,17 @@ namespace Nop.Services.Messages
         Task<IList<MessageTemplate>> GetAllMessageTemplatesAsync(int storeId);
 
         /// <summary>
+        /// Gets all message templates
+        /// </summary>
+        /// <param name="storeId">Store identifier; pass 0 to load all records</param>
+        /// <param name="keywords">Keywords to search into  body or subject</param>
+        /// <returns>
+        /// A task that represents the asynchronous operation
+        /// The task result contains the message template list
+        /// </returns>
+        Task<IList<MessageTemplate>> GetAllMessageTemplatesAsync(int storeId = 0, string keywords = null);
+
+        /// <summary>
         /// Create a copy of message template with all depended data
         /// </summary>
         /// <param name="messageTemplate">Message template</param>
