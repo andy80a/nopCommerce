@@ -452,8 +452,10 @@ namespace Nop.Services.Orders
                             if (string.IsNullOrEmpty(attributesXml))
                             {
                                 var cart = await GetShoppingCartAsync(customer, shoppingCartType, storeId);
-                                var totalQuantityInCart = cart.Where(item => item.ProductId == product.Id && string.IsNullOrEmpty(item.AttributesXml))
+                                var totalQuantityInCart = cart.Where(item => item.ProductId == product.Id && item.Id != shoppingCartItemId && string.IsNullOrEmpty(item.AttributesXml))
                                     .Sum(product => product.Quantity);
+
+                                totalQuantityInCart += quantity;
 
                                 foreach (var bundle in cart.Where(x => x.Id != shoppingCartItemId && !string.IsNullOrEmpty(x.AttributesXml)))
                                 {
