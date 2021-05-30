@@ -4,6 +4,7 @@ using Nop.Core.Domain.Common;
 using Nop.Core.Domain.Orders;
 using Nop.Services.Payments;
 using Nop.Web.Models.Checkout;
+using static Nop.Web.Models.Checkout.CheckoutBillingAddressModel;
 
 namespace Nop.Web.Factories
 {
@@ -36,8 +37,10 @@ namespace Nop.Web.Factories
         /// A task that represents the asynchronous operation
         /// The task result contains the shipping address model
         /// </returns>
-        Task<CheckoutShippingAddressModel> PrepareShippingAddressModelAsync(IList<ShoppingCartItem> cart, int? selectedCountryId = null,
-            bool prePopulateNewAddressWithCustomerFields = false, string overrideAttributesXml = "");
+        public Task<CheckoutShippingAddressModel> PrepareShippingAddressModelAsync(
+            AddressType type, int weight, int novaPoshtaRegionId, int novaPoshtaCityId,
+            IList<ShoppingCartItem> cart,
+            int? selectedCountryId = null, bool prePopulateNewAddressWithCustomerFields = false, string overrideAttributesXml = "");
 
         /// <summary>
         /// Prepare shipping method model
@@ -110,5 +113,14 @@ namespace Nop.Web.Factories
         /// The task result contains the one page checkout model
         /// </returns>
         Task<OnePageCheckoutModel> PrepareOnePageCheckoutModelAsync(IList<ShoppingCartItem> cart);
+
+
+        Task<(bool result, string city, string address)> GetNovaPoshtaCityAndAddressWarehouse(int warehouseId);
+        Task<(bool result, string city, string address)> GetNovaPoshtaCityAndAddressStreet(int streetId);
+        Task<(bool result, string city, string address)> GetSATCityAndAddressWarehouse(int warehouseId);
+        Task<(bool result, string city, string address)> GetSATCityAndAddressStreet(int streetId);
+        Task<(bool result, string city, string address)> GetMeestCityAndAddressWarehouse(int warehouseId);
+        Task<(bool result, string city, string address)> GetMeestCityAndAddressStreet(int streetId);
+        Task<(AddressType type, int weight)> GetNovaPoshtaStatus();
     }
 }

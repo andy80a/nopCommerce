@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using Nop.Web.Framework.Models;
 using Nop.Web.Models.Common;
+using static Nop.Web.Models.Checkout.CheckoutBillingAddressModel;
 
 namespace Nop.Web.Models.Checkout
 {
@@ -20,5 +21,6 @@ namespace Nop.Web.Models.Checkout
 
         public bool DisplayPickupInStore { get; set; }
         public CheckoutPickupPointsModel PickupPointsModel { get; set; }
+        public AddressType Type { get; internal set; }
     }
 }

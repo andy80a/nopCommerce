@@ -233,18 +233,10 @@ namespace Nop.Services.Discounts
         {
             var discountMappingRepository = EngineContext.Current.Resolve<IRepository<T>>();
 
-            var cacheKey = _staticCacheManager.PrepareKeyForShortTermCache(NopDiscountDefaults.AppliedDiscountsCacheKey, entity.GetType().Name, entity);
-
-            var appliedDiscounts= await _staticCacheManager.GetAsync(cacheKey,
-                async () =>
-                {
-                    return await (from d in _discountRepository.Table
-                        join ad in discountMappingRepository.Table on d.Id equals ad.DiscountId
-                        where ad.EntityId == entity.Id
-                        select d).ToListAsync();
-                });
-
-            return appliedDiscounts;
+            return await (from d in _discountRepository.Table
+                    join ad in discountMappingRepository.Table on d.Id equals ad.DiscountId
+                    where ad.EntityId == entity.Id
+                    select d).ToListAsync();
         }
 
         /// <summary>

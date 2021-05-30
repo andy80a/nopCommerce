@@ -23,6 +23,7 @@ namespace Nop.Services.Localization
         private readonly IStaticCacheManager _staticCacheManager;
         private readonly IStoreMappingService _storeMappingService;
         private readonly LocalizationSettings _localizationSettings;
+        private static IList<Language> _allLanguages;
 
         #endregion
 
@@ -81,30 +82,42 @@ namespace Nop.Services.Localization
         /// </returns>
         public virtual async Task<IList<Language>> GetAllLanguagesAsync(bool showHidden = false, int storeId = 0)
         {
-            //cacheable copy
-            var key = _staticCacheManager.PrepareKeyForDefaultCache(NopLocalizationDefaults.LanguagesAllCacheKey, storeId, showHidden);
-            
-            var languages = await _staticCacheManager.GetAsync(key, async () =>
+            if (_allLanguages == null)
             {
-                var allLanguages = await _languageRepository.GetAllAsync(query =>
-                {
-                    if (!showHidden)
-                        query = query.Where(l => l.Published);
-                    query = query.OrderBy(l => l.DisplayOrder).ThenBy(l => l.Id);
+                _allLanguages = _languageRepository.Table
+                    .OrderBy(l => l.DisplayOrder)
+                    .ThenBy(l => l.Id)
+                    .ToList();
+            }
 
-                    return query;
-                });
+            return _allLanguages;
 
-                //store mapping
-                if (storeId > 0)
-                    allLanguages = await allLanguages
-                        .WhereAwait(async l => await _storeMappingService.AuthorizeAsync(l, storeId))
-                        .ToListAsync();
+            ////cacheable copy
+            //var key = _staticCacheManager.PrepareKeyForDefaultCache(NopLocalizationDefaults.LanguagesAllCacheKey, storeId, showHidden);
+            
+            //var languages = await _staticCacheManager.GetAsync(key, async () =>
+            //{
+               
 
-                return allLanguages;
-            });
+            //    var allLanguages = await _languageRepository.GetAllAsync(query =>
+            //    {
+            //        if (!showHidden)
+            //            query = query.Where(l => l.Published);
+            //        query = query.OrderBy(l => l.DisplayOrder).ThenBy(l => l.Id);
 
-            return languages;
+            //        return query;
+            //    });
+
+            //    //store mapping
+            //    if (storeId > 0)
+            //        allLanguages = await allLanguages
+            //            .WhereAwait(async l => await _storeMappingService.AuthorizeAsync(l, storeId))
+            //            .ToListAsync();
+
+            //    return allLanguages;
+            //});
+
+            //return languages;
         }
 
         /// <summary>

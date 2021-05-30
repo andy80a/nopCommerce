@@ -2,14 +2,14 @@
 <div class="total-info">
     <table class="cart-total">
         <tbody>
-            <tr class="order-subtotal">
+            @*<tr class="order-subtotal">
                 <td class="cart-total-left">
                     <label>@T("ShoppingCart.Totals.SubTotal"):</label>
                 </td>
                 <td class="cart-total-right">
                     <span class="value-summary">@Model.SubTotal</span>
                 </td>
-            </tr>
+            </tr>*@
             @if (!string.IsNullOrEmpty(Model.SubTotalDiscount))
             {
                 <tr class="order-subtotal-discount">
@@ -21,7 +21,7 @@
                     </td>
                 </tr>
             }
-            @if (!Model.HideShippingTotal)
+            @*@if (!Model.HideShippingTotal)
             {
                 <tr class="shipping-cost">
                     <td class="cart-total-left">
@@ -49,7 +49,7 @@
                         }
                     </td>
                 </tr>
-            }
+            }*@
             @if (!string.IsNullOrEmpty(Model.PaymentMethodAdditionalFee))
             {
                 <tr class="additional-fees">

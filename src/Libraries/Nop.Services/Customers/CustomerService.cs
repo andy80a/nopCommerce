@@ -459,9 +459,9 @@ namespace Nop.Services.Customers
                         where c.CustomerGuid == customerGuid
                         orderby c.Id
                         select c;
-           
+
             var key = _staticCacheManager.PrepareKeyForShortTermCache(NopCustomerServicesDefaults.CustomerByGuidCacheKey, customerGuid);
-            
+
             return await _staticCacheManager.GetAsync(key, async () => await query.FirstOrDefaultAsync());
         }
 
@@ -1212,12 +1212,15 @@ namespace Nop.Services.Customers
 
             var key = _staticCacheManager.PrepareKeyForDefaultCache(NopCustomerServicesDefaults.CustomerRolesBySystemNameCacheKey, systemName);
 
-            var query = from cr in _customerRoleRepository.Table
-                        orderby cr.Id
-                        where cr.SystemName == systemName
-                        select cr;
+            var customerRole = await _staticCacheManager.GetAsync(key, async () =>
+            {
+                var query = from cr in _customerRoleRepository.Table
+                            orderby cr.Id
+                            where cr.SystemName == systemName
+                            select cr;
 
-            var customerRole = await _staticCacheManager.GetAsync(key, async () => await query.FirstOrDefaultAsync());
+                return await query.FirstOrDefaultAsync();
+            });
 
             return customerRole;
         }
@@ -1236,15 +1239,18 @@ namespace Nop.Services.Customers
             if (customer == null)
                 throw new ArgumentNullException(nameof(customer));
 
-            var query = from cr in _customerRoleRepository.Table
-                        join crm in _customerCustomerRoleMappingRepository.Table on cr.Id equals crm.CustomerRoleId
-                        where crm.CustomerId == customer.Id &&
-                        (showHidden || cr.Active)
-                        select cr.Id;
-
             var key = _staticCacheManager.PrepareKeyForShortTermCache(NopCustomerServicesDefaults.CustomerRoleIdsCacheKey, customer, showHidden);
 
-            return await _staticCacheManager.GetAsync(key, () => query.ToArray());
+            return await _staticCacheManager.GetAsync(key, () =>
+            {
+                var query = from cr in _customerRoleRepository.Table
+                            join crm in _customerCustomerRoleMappingRepository.Table on cr.Id equals crm.CustomerRoleId
+                            where crm.CustomerId == customer.Id &&
+                            (showHidden || cr.Active)
+                            select cr.Id;
+
+                return query.ToArray();
+            });
         }
 
         /// <summary>
@@ -1284,12 +1290,15 @@ namespace Nop.Services.Customers
         {
             var key = _staticCacheManager.PrepareKeyForDefaultCache(NopCustomerServicesDefaults.CustomerRolesAllCacheKey, showHidden);
 
-            var query = from cr in _customerRoleRepository.Table
-                        orderby cr.Name
-                        where showHidden || cr.Active
-                        select cr;
+            var customerRoles = await _staticCacheManager.GetAsync(key, async () =>
+            {
+                var query = from cr in _customerRoleRepository.Table
+                            orderby cr.Name
+                            where showHidden || cr.Active
+                            select cr;
 
-            var customerRoles = await _staticCacheManager.GetAsync(key, async () => await query.ToListAsync());
+                return await query.ToListAsync();
+            });
 
             return customerRoles;
         }

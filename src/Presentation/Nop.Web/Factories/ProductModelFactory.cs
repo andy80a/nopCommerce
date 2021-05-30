@@ -231,18 +231,24 @@ namespace Nop.Web.Factories
 
             if (_catalogSettings.ShowProductReviewsPerStore)
             {
-                var cacheKey = _staticCacheManager.PrepareKeyForDefaultCache(NopModelCacheDefaults.ProductReviewsModelKey, product, await _storeContext.GetCurrentStoreAsync());
+                var cacheKey = _staticCacheManager.PrepareKeyForDefaultCache(NopModelCacheDefaults.ProductReviewsModelKey, await _storeContext.GetCurrentStoreAsync());
 
-                productReview = await _staticCacheManager.GetAsync(cacheKey, async () =>
+                var allProductReviews = await _staticCacheManager.GetAsync(cacheKey, async () =>
                 {
-                    var productReviews = await _productService.GetAllProductReviewsAsync(productId: product.Id, approved: true, storeId: (await _storeContext.GetCurrentStoreAsync()).Id);
-                    
-                    return new ProductReviewOverviewModel
-                    {
-                        RatingSum = productReviews.Sum(pr => pr.Rating),
-                        TotalReviews = productReviews.Count
-                    };
+                  
+                    // VS var productReviews = _productService.GetAllProductReviews(productId: product.Id, approved: true, storeId: _storeContext.CurrentStore.Id);
+                    return await _productService.GetAllProductReviewsAsync(approved: true, storeId: (await _storeContext.GetCurrentStoreAsync()).Id);
                 });
+
+                var productReviews = allProductReviews
+                    .Where(x => x.ProductId == product.Id)
+                    .ToList();
+
+                productReview = new ProductReviewOverviewModel
+                {
+                    RatingSum = productReviews.Sum(pr => pr.Rating),
+                    TotalReviews = productReviews.Count
+                };
             }
             else
             {
@@ -515,12 +521,12 @@ namespace Nop.Web.Factories
             var pictureSize = productThumbPictureSize ?? _mediaSettings.ProductThumbPictureSize;
 
             //prepare picture model
-            var cacheKey = _staticCacheManager.PrepareKeyForDefaultCache(NopModelCacheDefaults.ProductDefaultPictureModelKey, 
-                product, pictureSize, true, await _workContext.GetWorkingLanguageAsync(), _webHelper.IsCurrentConnectionSecured(),
-                await _storeContext.GetCurrentStoreAsync());
+            //var cacheKey = _staticCacheManager.PrepareKeyForDefaultCache(NopModelCacheDefaults.ProductDefaultPictureModelKey, 
+            //    product, pictureSize, true, await _workContext.GetWorkingLanguageAsync(), _webHelper.IsCurrentConnectionSecured(),
+            //    await _storeContext.GetCurrentStoreAsync());
 
-            var defaultPictureModel = await _staticCacheManager.GetAsync(cacheKey, async () =>
-            {
+            //var defaultPictureModel = await _staticCacheManager.GetAsync(cacheKey, async () =>
+            //{
                 var picture = (await _pictureService.GetPicturesByProductIdAsync(product.Id, 1)).FirstOrDefault();
                 string fullSizeImageUrl, imageUrl;
                 (imageUrl, picture) = await _pictureService.GetPictureUrlAsync(picture, pictureSize);
@@ -543,9 +549,9 @@ namespace Nop.Web.Factories
                 };
 
                 return pictureModel;
-            });
+            //});
 
-            return defaultPictureModel;
+            //return defaultPictureModel;
         }
 
         /// <summary>

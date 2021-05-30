@@ -1,0 +1,212 @@
+﻿@model SevenSpikes.Nop.Plugins.FacebookShop.Areas.Admin.Models.HomePageProductsAdminSearchModel
+@inject AdminAreaSettings adminAreaSettings
+
+@{
+	Layout = AdminViewLocations.AdminPopupLayoutViewPath;
+
+	if (ViewBag.RefreshPage == true)
+	{
+        <script type="text/javascript">
+            try {
+                var gridElement = window.opener.document.getElementById("@ViewBag.btnId");
+                $(gridElement).click();
+            } catch (e) {}
+            window.close();
+        </script>
+
+        return;
+    }
+    
+    var defaultGridPageSize = adminAreaSettings.DefaultGridPageSize;
+    var gridPageSizes = adminAreaSettings.GridPageSizes;
+
+    //page title
+    ViewBag.PageTitle = T("Admin.Catalog.Categories.Products.AddNew").Text;
+}
+
+<form method="post">
+
+    <div class="content-header clearfix">
+        <h1 class="pull-left">
+            @T("Admin.Catalog.Categories.Products.AddNew")
+        </h1>
+        <div class="pull-right">
+            &nbsp;
+        </div>
+    </div>
+
+    @if (ViewBag.RefreshPage == true)
+    {
+    <script type="text/javascript">
+            try {window.opener.document.forms['@(ViewBag.formId)'].@(ViewBag.btnId).click();}
+            catch (e){}
+            window.close();
+    </script>
+    }
+
+    <section class="content">
+        <div class="form-horizontal">
+            <div class="cards-group">
+                <div class="card card-default card-search card-search-popup">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <div class="form-group row">
+                                    <div class="col-sm-5">
+                                        <nop-label asp-for="SearchProductName" />
+                                    </div>
+                                    <div class="col-sm-7">
+                                        <nop-editor asp-for="SearchProductName" />
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <div class="col-sm-5">
+                                        <nop-label asp-for="SearchCategoryId" />
+                                    </div>
+                                    <div class="col-sm-7">
+                                        <nop-select asp-for="SearchCategoryId" asp-items="Model.AvailableCategories" />
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <div class="col-sm-5">
+                                        <nop-label asp-for="SearchManufacturerId" />
+                                    </div>
+                                    <div class="col-sm-7">
+                                        <nop-select asp-for="SearchManufacturerId" asp-items="Model.AvailableManufacturers" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="form-group row">
+                                    <div class="col-sm-5">
+                                        <nop-label asp-for="SearchStoreId" />
+                                    </div>
+                                    <div class="col-sm-7">
+                                        <nop-select asp-for="SearchStoreId" asp-items="Model.AvailableStores" />
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <div class="col-sm-5">
+                                        <nop-label asp-for="SearchVendorId" />
+                                    </div>
+                                    <div class="col-sm-7">
+                                        <nop-select asp-for="SearchVendorId" asp-items="Model.AvailableVendors" />
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <div class="col-sm-5">
+                                        <nop-label asp-for="SearchProductTypeId" />
+                                    </div>
+                                    <div class="col-sm-7">
+                                        <nop-select asp-for="SearchProductTypeId" asp-items="Model.AvailableProductTypes" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <button type="button" id="search-products" class="btn btn-primary btn-search">
+                                    <i class="fa fa-search"></i>
+                                    @T("Admin.Common.Search")
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    @await Html.PartialAsync("Table", new DataTablesModel
+                    {
+                        Name = "products-grid",
+                        UrlRead = new DataUrl("ProductAddPopupList", "FacebookShopAdmin", null),
+                        Length = defaultGridPageSize,
+                        LengthMenu = gridPageSizes,
+                        Filters = new List<FilterParameter>
+                        {
+                            new FilterParameter(nameof(Model.SearchProductName)),
+                            new FilterParameter(nameof(Model.SearchCategoryId)),
+                            new FilterParameter(nameof(Model.SearchManufacturerId)),
+                            new FilterParameter(nameof(Model.SearchStoreId)),
+                            new FilterParameter(nameof(Model.SearchVendorId)),
+                            new FilterParameter(nameof(Model.SearchProductTypeId))
+                        },
+                        ColumnCollection = new List<ColumnProperty>
+                        {
+                            new ColumnProperty(nameof(ProductModel.Id))
+                            {
+                                IsMasterCheckBox = true,
+                                Width = "50",
+                                Render = new RenderCustom("renderSelectedCheckBox")
+                            },
+                            new ColumnProperty(nameof(ProductModel.Name))
+                            {
+                                Title = T("Admin.Catalog.Products.Fields.Name").Text
+                            },
+                            new ColumnProperty(nameof(ProductModel.Published))
+                            {
+                                Title = T("Admin.Catalog.Products.Fields.Published").Text,
+                                Render = new RenderCustom("renderIsPublished")
+                            }
+                        }
+                    })
+                    <script>
+
+                        function renderSelectedCheckBox(data, type, row, meta) {
+                            console.log(data.SelectedProductIds);
+                            var checked = row.Selected ? 'checked' : '';
+
+                            return '<input type="checkbox" id="SelectedProductIds" name="SelectedProductIds" value="' + row.Id + '" class="checkboxGroups" ' + checked + '>';
+                        }
+                                                                
+                        function updateMasterCheckbox() {
+                            var numChkBoxes = $('#products-grid input[type=checkbox][id!=mastercheckbox]').length;
+                            var numChkBoxesChecked = $('#products-grid input[type=checkbox][id!=mastercheckbox]:checked').length;
+                            $('#mastercheckbox').attr('checked', numChkBoxes == numChkBoxesChecked && numChkBoxes > 0);
+                        }
+
+                        function renderIsPublished(data, type, row, meta) {
+
+                            if (row.Published) {
+
+                                return '<i class="fa fa-check true-icon"></i>';
+                            }
+                            else {
+
+                                return '<i class="fa fa-close false-icon"></i>';
+                            }
+                        }
+
+                    </script>
+
+                    <script type="text/javascript">
+                        $(document).ready(function () {
+                            $('#search-products').click(function (e) {
+
+                                e.preventDefault();
+                                    
+                                var grid = $("#products-grid").DataTable();
+                                grid.ajax.reload();                            
+
+                                return false;
+                            });
+                        });
+
+                        $("#@Html.IdFor(model => model.SearchProductName)").keydown(function (event) {
+                            if (event.keyCode == 13) {
+                                $("#search-products").click();
+                                return false;
+                            }
+                        });
+                    </script>
+                </div>
+                <div class="card-footer">
+                    <button type="submit" name="save" class="btn bg-blue">
+                        <i class="far fa-save"></i>
+                        @T("Admin.Common.Save")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+</form>

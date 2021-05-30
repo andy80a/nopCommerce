@@ -1,0 +1,108 @@
+﻿@using Nop.Core
+@using Nop.Services.Configuration
+@using Nop.Services.Security
+@using Nop.Services.Orders
+@using Nop.Core.Domain.Orders
+
+@inject IStoreContext storeContext
+@inject IWorkContext workContext
+@inject ISettingService settingService
+@inject IPermissionService permissionService
+@inject ShoppingCartSettings shoppingCartSettings
+@{
+    Layout = "_Root.Head";
+
+    var storeId = (await storeContext.GetCurrentStoreAsync()).Id;
+
+    var controllerName = Url.ActionContext.RouteData.Values["controller"].ToString();
+    var isHomePage = controllerName.Equals("home", StringComparison.InvariantCultureIgnoreCase);
+    var customer = await workContext.GetCurrentCustomerAsync();   
+}
+
+@await Component.InvokeAsync("Widget", new { widgetZone = PublicWidgetZones.BodyStartHtmlTagAfter })
+@await Html.PartialAsync("_Notifications")
+@await Html.PartialAsync("_JavaScriptDisabledWarning")
+@await Html.PartialAsync("_OldInternetExplorerWarning")
+
+
+<div class="master-wrapper-page">
+    @await Component.InvokeAsync("AdminHeaderLinks")
+
+    <div class="responsive-nav-wrapper-parent">
+        <div class="responsive-nav-wrapper">
+            <div class="menu-title">
+                <span>@T("SevenSpikes.Themes.Common.MenuTitle")</span>
+            </div>
+            <div class="search-wrap">
+                <span>@T("Search")</span>
+            </div>
+            <div class="menu-contacts contacts-toggle">
+                <span></span>
+            </div>
+            <div class="mobile-logo">
+                @await Component.InvokeAsync("Logo")
+            </div>
+            <div class="shopping-cart-link">               
+            </div>
+            <div class="personal-button" id="header-links-opener">
+                <span>@T("SevenSpikes.Themes.Common.Personal")</span>
+            </div>
+        </div>
+
+    </div>
+    @await Html.PartialAsync("_Header")
+
+
+<div class="header-contacts-line">
+    <a href="tel:+380961481200">
+        <img src="/icons/logo-ks.png" />
+        +38(096)148-12-00
+    </a>
+    <a href="tel:+380503756360">
+        <img src="/icons/logo-mts.png" />
+        +38(050)375-63-60
+    </a>
+    <a href="tel:+380630195490">
+        <img src="/icons/logo-life.png" />
+        +38(063)019-54-90
+    </a>
+    <a href="tel:+380442477289">
+        <img src="/icons/logo-phone.jpg" />
+        +38(044)247-72-89
+    </a>
+</div>
+
+
+    <script type="text/javascript" asp-location="Footer">
+        var localized_data = {
+            AjaxCartFailure: "@T("AjaxCart.Failure")"
+        };
+        AjaxCart.init(false, '.cart-qty', '.header-links .wishlist-qty', '#flyout-cart', localized_data);
+
+            $(".contacts-toggle").click(function () {
+                if ($('.header-contacts-line').css('display') == 'none')
+                    $('.header-caontacts-line').css('display', 'block');
+                else
+                    $('.header-contacts-line').css('display', 'none');
+            })
+    </script>
+    <div class="overlayOffCanvas"></div>
+    @if (isHomePage)
+    {
+        @await Component.InvokeAsync("Widget", new { widgetZone = "home_page_main_slider" })
+    }
+    <div class="master-wrapper-content">
+        @await Component.InvokeAsync("Widget", new { widgetZone = PublicWidgetZones.ContentBefore })
+        @if (IsSectionDefined("Breadcrumb"))
+        {
+            @RenderSection("Breadcrumb")
+        }
+        <div class="master-column-wrapper">
+            @RenderBody()
+        </div>
+        @await Component.InvokeAsync("Widget", new { widgetZone = PublicWidgetZones.ContentAfter })
+    </div>
+    @await Component.InvokeAsync("Footer")
+</div>
+@await Component.InvokeAsync("EuCookieLaw")
+@await Component.InvokeAsync("Widget", new { widgetZone = PublicWidgetZones.BodyEndHtmlTagBefore })

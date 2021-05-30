@@ -6,6 +6,17 @@ namespace Nop.Web.Models.Checkout
 {
     public partial record CheckoutBillingAddressModel : BaseNopModel
     {
+        public enum AddressType
+        {
+            NovaPoshtaWarehouse,
+            NovaPoshtaAddress,
+            Address,
+            SATWarehouse,
+            SATAddress,
+            MeestWarehouse,
+            MeestAddress
+        }
+
         public CheckoutBillingAddressModel()
         {
             ExistingAddresses = new List<AddressModel>();

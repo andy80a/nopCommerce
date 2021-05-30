@@ -55,6 +55,8 @@
         /// </summary>
         public static string FirstNameAttribute => "FirstName";
 
+        public static string MiddleName => "MiddleName";
+
         /// <summary>
         /// Gets a name of generic attribute to store the value of 'LastName'
         /// </summary>
@@ -289,6 +291,16 @@
         /// Gets a name of generic attribute to store the value of 'CloseConfigurationSteps'
         /// </summary>
         public static string CloseConfigurationStepsAttribute => "CloseConfigurationSteps";
+
+
+        public static string CurrencyId { get { return "CurrencyId"; } }
+        public static string NovaPoshtaCityId { get { return "NovaPoshtaCityId"; } }
+        public static string NovaPoshtaStreetId { get { return "NovaPoshtaStreetId"; } }
+        public static string MeestCityId { get { return "MeestCityId"; } }
+        public static string MeestRegionId { get { return "MeestRegionId"; } }
+        public static string MeestStreetId { get { return "MeestStreetId"; } }
+        public static string SATCityId { get { return "SATCityId"; } }
+        public static string SATStreetId { get { return "SATStreetId"; } }
 
         #endregion
     }

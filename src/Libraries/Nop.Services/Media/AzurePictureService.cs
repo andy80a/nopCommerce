@@ -67,7 +67,8 @@ namespace Nop.Services.Media
                   settingService,
                   urlRecordService,
                   webHelper,
-                  mediaSettings)
+                  mediaSettings,
+                  staticCacheManager)
         {
             _staticCacheManager = staticCacheManager;
             _mediaSettings = mediaSettings;

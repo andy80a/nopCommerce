@@ -20,12 +20,6 @@ namespace Nop.Data.DataProviders
     /// </summary>
     public partial class MsSqlNopDataProvider : BaseDataProvider, INopDataProvider
     {
-        #region Fields
-
-        private static readonly Lazy<IDataProvider> _dataProvider = new(() => new SqlServerDataProvider(ProviderName.SqlServer, SqlServerVersion.v2012, SqlServerProvider.SystemDataSqlClient), true);
-
-        #endregion
-
         #region Utils
 
         /// <returns>A task that represents the asynchronous operation</returns>
@@ -46,7 +40,7 @@ namespace Nop.Data.DataProviders
         #endregion
 
         #region Utils
-        
+
         /// <summary>
         /// Gets a connection to the database for a current data provider
         /// </summary>
@@ -54,6 +48,16 @@ namespace Nop.Data.DataProviders
         /// <returns>Connection to a database</returns>
         protected override DbConnection GetInternalDbConnection(string connectionString)
         {
+            if (string.IsNullOrEmpty(connectionString))
+                throw new ArgumentException(nameof(connectionString));
+
+            return new SqlConnection(connectionString);
+        }
+
+        public DbConnection GetDbConnection()
+        {
+            var connection = GetConnectionStringBuilder();
+            var connectionString = connection.ConnectionString;
             if (string.IsNullOrEmpty(connectionString))
                 throw new ArgumentException(nameof(connectionString));
 
@@ -346,7 +350,7 @@ namespace Nop.Data.DataProviders
         /// <summary>
         /// Sql server data provider
         /// </summary>
-        protected override IDataProvider LinqToDbDataProvider => _dataProvider.Value;
+        protected override IDataProvider LinqToDbDataProvider => SqlServerTools.GetDataProvider(SqlServerVersion.v2008, SqlServerProvider.SystemDataSqlClient);
 
         /// <summary>
         /// Gets allowed a limit input value of the data for hashing functions, returns 0 if not limited

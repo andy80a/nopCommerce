@@ -1,0 +1,83 @@
+﻿@model DeliveryPriceModel
+@using Nop.Web.Models.Catalog;
+@{
+/*pop-up windows*/
+Layout = "_Root.Head";
+}
+
+    <div class="page back-in-stock-subscription-page">
+        @using (Html.BeginForm(null, null, FormMethod.Post, new { id = "calculate-form" }))
+        {
+            <br>
+            <div class="page-body">
+                <div>
+                    @T("PDFPackagingSlip.ProductName"): @Html.Raw(Model.ProductName), @Html.Raw(Model.ProductShortDescription)
+                </div>
+                <br>
+                <div align="left">
+                    @T("Order.Weight"): @Model.Weight кг.
+                </div>
+                <br>
+                @if (Model.VolumeWeight == 0.0)
+                {
+                    <div align="left">
+                        @T("Custom.DeliveryPricePopupUnknownVolumeWeight")
+                    </div>
+                }
+
+
+                <input asp-for="ProductId" type="hidden" />
+                <input asp-for="DeliveryType" type="hidden" />
+                <div align="left">
+                    <div class="inputs">
+                        <label asp-for="CityId" asp-postfix=":"></label>
+                        <select asp-update asp-for="CityId" asp-items="Model.Cities"></select>
+                        <nop-required />
+                        <span asp-validation-for="CityId"></span>
+                    </div>
+                </div>
+
+                <div>
+                    <br>
+                    <input type="submit" id="calcDeliveryPrice" disabled class="button-1" value="@T("Custom.DeliveryPricePopupCalculate")">
+                </div>
+                @if (Model.DeliveryPrice > 0)
+                {
+                    <div align="left">
+                        <br>
+                        @T("Custom.DeliveryPricePopupPrice"): @Html.Raw(Model.DeliveryPrice) грн.
+                    </div>
+                    <div align="left">
+                        @T("Custom.DeliveryPricePopupPriceAdr"): @Html.Raw(Model.DeliveryPriceHome) грн.
+                    </div>
+                }
+
+            </div>
+        }
+        <br>
+        <hr>
+        <br>
+        <div align="left">
+            @T("Custom.DeliveryPricePopupBottomText")
+
+            @if (Model.IsObr == 2)
+            {
+                <b> @T("Custom.ObrY")</b>
+            }
+
+            @if (Model.IsObr == 1)
+            {
+                <b>@T("Custom.ObrN")</b>
+            }
+        </div>
+
+        <script type="text/javascript" asp-location="Footer">
+            $("#CityId").change(function () {
+                if (this.value == 0) { $('#calcDeliveryPrice').prop('disabled', true); } else { $('#calcDeliveryPrice').prop('disabled', false); }
+            });
+            $(document).ready(function () {
+                $("#CityId").change();
+            });
+        </script>
+    </div>
+

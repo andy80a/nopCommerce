@@ -30,8 +30,6 @@ namespace Nop.Services.Catalog.Caching
             if (entityEventType == EntityEventType.Delete)
                 await RemoveAsync(NopCatalogDefaults.SpecificationAttributeOptionsByCategoryCacheKey, entity);
 
-            await RemoveAsync(NopDiscountDefaults.AppliedDiscountsCacheKey, nameof(Category), entity);
-
             await base.ClearCacheAsync(entity, entityEventType);
         }
     }

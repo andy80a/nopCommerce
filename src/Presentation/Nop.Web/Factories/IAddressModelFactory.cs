@@ -4,7 +4,9 @@ using System.Threading.Tasks;
 using Nop.Core.Domain.Common;
 using Nop.Core.Domain.Customers;
 using Nop.Core.Domain.Directory;
+using Nop.Web.Models.Checkout;
 using Nop.Web.Models.Common;
+using static Nop.Web.Models.Checkout.CheckoutBillingAddressModel;
 
 namespace Nop.Web.Factories
 {
@@ -31,6 +33,7 @@ namespace Nop.Web.Factories
             Func<Task<IList<Country>>> loadCountries = null,
             bool prePopulateWithCustomerFields = false,
             Customer customer = null,
-            string overrideAttributesXml = "");
+            string overrideAttributesXml = "",
+            AddressType? type = null);
     }
 }

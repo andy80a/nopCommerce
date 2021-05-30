@@ -76,7 +76,7 @@ namespace Nop.Services.Catalog
         /// <returns>A task that represents the asynchronous operation</returns>
         protected virtual async Task<IQueryable<Product>> GetAvailableProductsQueryAsync()
         {
-            var productsQuery = 
+            var productsQuery =
                 from p in _productRepository.Table
                 where !p.Deleted && p.Published &&
                       (p.ParentGroupedProductId == 0 || p.VisibleIndividually) &&
@@ -196,6 +196,17 @@ namespace Nop.Services.Catalog
 
         #region Specification attribute
 
+        private async Task<SpecificationAttribute[]> GetAllSpecificationAttributes()
+        {
+            var key = new CacheKey(nameof(GetAllSpecificationAttributes));
+            return await _staticCacheManager.GetAsync(key, () =>
+            {
+                return _specificationAttributeRepository.Table
+                    .OrderBy(x => x.DisplayOrder)
+                    .ToArray();
+            });
+        }
+
         /// <summary>
         /// Gets a specification attribute
         /// </summary>
@@ -206,7 +217,7 @@ namespace Nop.Services.Catalog
         /// </returns>
         public virtual async Task<SpecificationAttribute> GetSpecificationAttributeByIdAsync(int specificationAttributeId)
         {
-            return await _specificationAttributeRepository.GetByIdAsync(specificationAttributeId, cache => default);
+            return (await GetAllSpecificationAttributes()).FirstOrDefault(x => x.Id == specificationAttributeId);
         }
 
         /// <summary>
@@ -219,7 +230,7 @@ namespace Nop.Services.Catalog
         /// </returns>
         public virtual async Task<IList<SpecificationAttribute>> GetSpecificationAttributeByIdsAsync(int[] specificationAttributeIds)
         {
-            return await _specificationAttributeRepository.GetByIdsAsync(specificationAttributeIds);
+            return (await GetAllSpecificationAttributes()).Where(x => specificationAttributeIds.Contains(x.Id)).ToList();
         }
 
         /// <summary>
@@ -233,11 +244,8 @@ namespace Nop.Services.Catalog
         /// </returns>
         public virtual async Task<IPagedList<SpecificationAttribute>> GetSpecificationAttributesAsync(int pageIndex = 0, int pageSize = int.MaxValue)
         {
-            var query = from sa in _specificationAttributeRepository.Table
-                        orderby sa.DisplayOrder, sa.Id
-                        select sa;
-
-            return await query.ToPagedListAsync(pageIndex, pageSize);
+            var attributes = await GetAllSpecificationAttributes();
+            return new PagedList<SpecificationAttribute>(attributes, pageIndex, pageSize);
         }
 
         /// <summary>
@@ -249,12 +257,12 @@ namespace Nop.Services.Catalog
         /// </returns>
         public virtual async Task<IList<SpecificationAttribute>> GetSpecificationAttributesWithOptionsAsync()
         {
-            var query = from sa in _specificationAttributeRepository.Table
-                        where _specificationAttributeOptionRepository.Table.Any(o => o.SpecificationAttributeId == sa.Id)
-                        orderby sa.DisplayOrder, sa.Id
-                        select sa;
+            var attributes = await GetAllSpecificationAttributes();
+            var options = await GetAllSpecificationAttributeOptions();
 
-            return await _staticCacheManager.GetAsync(_staticCacheManager.PrepareKeyForDefaultCache(NopCatalogDefaults.SpecificationAttributesWithOptionsCacheKey), async () => await query.ToListAsync());
+            return attributes
+                .Where(x => options.Any(o => o.SpecificationAttributeId == x.Id))
+                .ToArray();
         }
 
         /// <summary>
@@ -324,6 +332,17 @@ namespace Nop.Services.Catalog
 
         #region Specification attribute option
 
+        private async Task<SpecificationAttributeOption[]> GetAllSpecificationAttributeOptions()
+        {
+            var key = new CacheKey(nameof(GetAllSpecificationAttributeOptions));
+            return await _staticCacheManager.GetAsync(key, () =>
+            {
+                return _specificationAttributeOptionRepository.Table
+                    .OrderBy(x => x.DisplayOrder)
+                    .ToArray();
+            });
+        }
+
         /// <summary>
         /// Gets a specification attribute option
         /// </summary>
@@ -334,7 +353,7 @@ namespace Nop.Services.Catalog
         /// </returns>
         public virtual async Task<SpecificationAttributeOption> GetSpecificationAttributeOptionByIdAsync(int specificationAttributeOptionId)
         {
-            return await _specificationAttributeOptionRepository.GetByIdAsync(specificationAttributeOptionId, cache => default);
+            return (await GetAllSpecificationAttributeOptions()).FirstOrDefault(x => x.Id == specificationAttributeOptionId);
         }
 
         /// <summary>
@@ -347,7 +366,9 @@ namespace Nop.Services.Catalog
         /// </returns>
         public virtual async Task<IList<SpecificationAttributeOption>> GetSpecificationAttributeOptionsByIdsAsync(int[] specificationAttributeOptionIds)
         {
-            return await _specificationAttributeOptionRepository.GetByIdsAsync(specificationAttributeOptionIds);
+            return (await GetAllSpecificationAttributeOptions())
+                .Where(x => specificationAttributeOptionIds.Contains(x.Id))
+                .ToList();
         }
 
         /// <summary>
@@ -360,14 +381,9 @@ namespace Nop.Services.Catalog
         /// </returns>
         public virtual async Task<IList<SpecificationAttributeOption>> GetSpecificationAttributeOptionsBySpecificationAttributeAsync(int specificationAttributeId)
         {
-            var query = from sao in _specificationAttributeOptionRepository.Table
-                        orderby sao.DisplayOrder, sao.Id
-                        where sao.SpecificationAttributeId == specificationAttributeId
-                        select sao;
-
-            var specificationAttributeOptions = await _staticCacheManager.GetAsync(_staticCacheManager.PrepareKeyForDefaultCache(NopCatalogDefaults.SpecificationAttributeOptionsCacheKey, specificationAttributeId), async () => await query.ToListAsync());
-
-            return specificationAttributeOptions;
+            return (await GetAllSpecificationAttributeOptions())
+               .Where(x => x.SpecificationAttributeId == specificationAttributeId)
+               .ToArray();
         }
 
         /// <summary>
@@ -443,14 +459,14 @@ namespace Nop.Services.Catalog
                 var store = await _storeContext.GetCurrentStoreAsync();
                 subCategoryIds = await _categoryService.GetChildCategoryIdsAsync(categoryId, store.Id);
             }
-            
-            var productCategoryQuery = 
+
+            var productCategoryQuery =
                 from pc in _productCategoryRepository.Table
                 where (pc.CategoryId == categoryId || (_catalogSettings.ShowProductsFromSubcategories && subCategoryIds.Contains(pc.CategoryId))) &&
                       (_catalogSettings.IncludeFeaturedProductsInNormalLists || !pc.IsFeaturedProduct)
                 select pc;
 
-            var result = 
+            var result =
                 from sao in _specificationAttributeOptionRepository.Table
                 join psa in _productSpecificationAttributeRepository.Table on sao.Id equals psa.SpecificationAttributeOptionId
                 join p in productsQuery on psa.ProductId equals p.Id
@@ -485,13 +501,13 @@ namespace Nop.Services.Catalog
 
             var productsQuery = await GetAvailableProductsQueryAsync();
 
-            var productManufacturerQuery = 
+            var productManufacturerQuery =
                 from pm in _productManufacturerRepository.Table
-                where pm.ManufacturerId == manufacturerId && 
+                where pm.ManufacturerId == manufacturerId &&
                       (_catalogSettings.IncludeFeaturedProductsInNormalLists || !pm.IsFeaturedProduct)
                 select pm;
 
-            var result = 
+            var result =
                 from sao in _specificationAttributeOptionRepository.Table
                 join psa in _productSpecificationAttributeRepository.Table on sao.Id equals psa.SpecificationAttributeOptionId
                 join p in productsQuery on psa.ProductId equals p.Id
@@ -639,11 +655,11 @@ namespace Nop.Services.Catalog
         public virtual async Task<IPagedList<Product>> GetProductsBySpecificationAttributeIdAsync(int specificationAttributeId, int pageIndex, int pageSize)
         {
             var query = from product in _productRepository.Table
-                join psa in _productSpecificationAttributeRepository.Table on product.Id equals psa.ProductId
-                join spao in _specificationAttributeOptionRepository.Table on psa.SpecificationAttributeOptionId equals spao.Id
-                where spao.SpecificationAttributeId == specificationAttributeId
-                orderby product.Name
-                select product;
+                        join psa in _productSpecificationAttributeRepository.Table on product.Id equals psa.ProductId
+                        join spao in _specificationAttributeOptionRepository.Table on psa.SpecificationAttributeOptionId equals spao.Id
+                        where spao.SpecificationAttributeId == specificationAttributeId
+                        orderby product.Name
+                        select product;
 
             return await query.ToPagedListAsync(pageIndex, pageSize);
         }

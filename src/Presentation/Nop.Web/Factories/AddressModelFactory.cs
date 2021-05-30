@@ -12,7 +12,9 @@ using Nop.Core.Infrastructure;
 using Nop.Services.Common;
 using Nop.Services.Directory;
 using Nop.Services.Localization;
+using Nop.Web.Models.Checkout;
 using Nop.Web.Models.Common;
+using static Nop.Web.Models.Checkout.CheckoutBillingAddressModel;
 
 namespace Nop.Web.Factories
 {
@@ -173,7 +175,8 @@ namespace Nop.Web.Factories
             Func<Task<IList<Country>>> loadCountries = null,
             bool prePopulateWithCustomerFields = false,
             Customer customer = null,
-            string overrideAttributesXml = "")
+            string overrideAttributesXml = "",
+            AddressType? type = null)
         {
             if (model == null)
                 throw new ArgumentNullException(nameof(model));
@@ -293,6 +296,12 @@ namespace Nop.Web.Factories
             model.PhoneRequired = addressSettings.PhoneRequired;
             model.FaxEnabled = addressSettings.FaxEnabled;
             model.FaxRequired = addressSettings.FaxRequired;
+
+            if (type == AddressType.MeestAddress || type == AddressType.SATAddress || type == AddressType.NovaPoshtaAddress)
+            {
+                model.ApartmentRequired = true;
+                model.BuildingRequired = true;
+            }
 
             //customer attribute services
             if (_addressAttributeService != null && _addressAttributeParser != null)

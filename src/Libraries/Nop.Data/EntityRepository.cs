@@ -22,7 +22,7 @@ namespace Nop.Data
         #region Fields
 
         private readonly IEventPublisher _eventPublisher;
-        private readonly INopDataProvider _dataProvider;
+        public readonly INopDataProvider _dataProvider;
         private readonly IStaticCacheManager _staticCacheManager;
 
         #endregion

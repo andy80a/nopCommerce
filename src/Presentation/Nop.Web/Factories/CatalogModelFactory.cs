@@ -34,6 +34,7 @@ using Nop.Web.Framework.Events;
 using Nop.Web.Infrastructure.Cache;
 using Nop.Web.Models.Catalog;
 using Nop.Web.Models.Media;
+using System.Diagnostics;
 
 namespace Nop.Web.Factories
 {
@@ -404,11 +405,12 @@ namespace Nop.Web.Factories
             };
 
             //category breadcrumb
+            var categories = await _categoryService.GetAllCategoriesAsync();
             if (_catalogSettings.CategoryBreadcrumbEnabled)
             {
                 model.DisplayCategoryBreadcrumb = true;
 
-                model.CategoryBreadcrumb = await (await _categoryService.GetCategoryBreadCrumbAsync(category)).SelectAwait(async catBr =>
+                model.CategoryBreadcrumb = await (await _categoryService.GetCategoryBreadCrumbAsync(category, categories)).SelectAwait(async catBr =>
                     new CategoryModel
                     {
                         Id = catBr.Id,
@@ -421,7 +423,9 @@ namespace Nop.Web.Factories
             var pictureSize = _mediaSettings.CategoryThumbPictureSize;
 
             //subcategories
-            model.SubCategories = await (await _categoryService.GetAllCategoriesByParentCategoryIdAsync(category.Id))
+            model.SubCategories =
+                //await (await _categoryService.GetAllCategoriesByParentCategoryIdAsync(category.Id))
+                await categories.Where(x => x.ParentCategoryId == category.Id)
                 .SelectAwait(async curCategory =>
                 {
                     var subCatModel = new CategoryModel.SubCategoryModel
@@ -433,30 +437,23 @@ namespace Nop.Web.Factories
                     };
 
                     //prepare picture model
-                    var categoryPictureCacheKey = _staticCacheManager.PrepareKeyForDefaultCache(NopModelCacheDefaults.CategoryPictureModelKey, curCategory,
-                        pictureSize, true, await _workContext.GetWorkingLanguageAsync(), _webHelper.IsCurrentConnectionSecured(),
-                        currentStore);
+                    //var categoryPictureCacheKey = _staticCacheManager.PrepareKeyForDefaultCache(NopModelCacheDefaults.CategoryPictureModelKey, curCategory,
+                    //    pictureSize, true, await _workContext.GetWorkingLanguageAsync(), _webHelper.IsCurrentConnectionSecured(),
+                    //    currentStore);
+                    var picture = await _pictureService.GetPictureByIdAsync(curCategory.PictureId);
+                    var fullSizePicureUrl = await _pictureService.GetPictureUrlAsync(picture);
+                    var thumbSizePicureUrl = await _pictureService.GetPictureUrlAsync(picture, pictureSize);
 
-                    subCatModel.PictureModel = await _staticCacheManager.GetAsync(categoryPictureCacheKey, async () =>
-                    {
-                        var picture = await _pictureService.GetPictureByIdAsync(curCategory.PictureId);
-                        string fullSizeImageUrl, imageUrl;
-
-                        (fullSizeImageUrl, picture) = await _pictureService.GetPictureUrlAsync(picture);
-                        (imageUrl, _) = await _pictureService.GetPictureUrlAsync(picture, pictureSize);
-
-                        var pictureModel = new PictureModel
+                    subCatModel.PictureModel = 
+                    //await _staticCacheManager.GetAsync(categoryPictureCacheKey, async () =>
+                   
+                        new PictureModel
                         {
-                            FullSizeImageUrl = fullSizeImageUrl,
-                            ImageUrl = imageUrl,
-                            Title = string.Format(await _localizationService
-                                .GetResourceAsync("Media.Category.ImageLinkTitleFormat"), subCatModel.Name),
-                            AlternateText = string.Format(await _localizationService
-                                .GetResourceAsync("Media.Category.ImageAlternateTextFormat"), subCatModel.Name)
+                            FullSizeImageUrl = fullSizePicureUrl.Url,
+                            ImageUrl = thumbSizePicureUrl.Url,
+                            Title = string.Format(await _localizationService.GetResourceAsync("Media.Category.ImageLinkTitleFormat"), subCatModel.Name),
+                            AlternateText = string.Format(await _localizationService.GetResourceAsync("Media.Category.ImageAlternateTextFormat"), subCatModel.Name)
                         };
-
-                        return pictureModel;
-                    });
 
                     return subCatModel;
                 }).ToListAsync();

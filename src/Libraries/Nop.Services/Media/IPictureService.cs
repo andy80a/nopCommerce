@@ -144,6 +144,7 @@ namespace Nop.Services.Media
         /// The task result contains the pictures
         /// </returns>
         Task<IList<Picture>> GetPicturesByProductIdAsync(int productId, int recordsToReturn = 0);
+        IDictionary<int, Picture[]> GetAllPicturesByProduct();
 
         /// <summary>
         /// Inserts a picture

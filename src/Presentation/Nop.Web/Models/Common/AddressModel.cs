@@ -17,6 +17,9 @@ namespace Nop.Web.Models.Common
 
         [NopResourceDisplayName("Address.Fields.FirstName")]
         public string FirstName { get; set; }
+
+        [NopResourceDisplayName("Address.Fields.MiddleName")]
+        public string MiddleName { get; set; }
         [NopResourceDisplayName("Address.Fields.LastName")]
         public string LastName { get; set; }
         [DataType(DataType.EmailAddress)]
@@ -82,5 +85,42 @@ namespace Nop.Web.Models.Common
 
         public string FormattedCustomAddressAttributes { get; set; }
         public IList<AddressAttributeModel> CustomAddressAttributes { get; set; }
+
+
+
+
+
+
+
+
+
+        [NopResourceDisplayName("Address.Fields.City")]
+        public int NovaPoshtaCityId { get; set; }
+        [NopResourceDisplayName("Custom.Warehouse")]
+        public int NovaPoshtaWarehouseId { get; set; }
+
+        [NopResourceDisplayName("Address.Fields.Street")]
+        public int NovaPoshtaStreetId { get; set; }
+
+        [NopResourceDisplayName("ShoppingCart.EstimateShipping.StateProvince")]
+        public int NovaPoshtaRegionId { get; set; }
+        public bool BuildingRequired { get; set; }
+
+        [NopResourceDisplayName("Address.Fields.Building")]
+        public string Building { get; set; }
+        public bool ApartmentRequired { get; set; }
+
+        [NopResourceDisplayName("Address.Fields.Apartment")]
+        public string Apartment { get; set; }
+        public IList<SelectListItem> NovaPoshtaRegion { get; set; }
+        public IList<SelectListItem> NovaPoshtaCity { get; set; }
+        public IList<SelectListItem> NovaPoshtaWarehouse { get; set; }
+
+        public IList<SelectListItem> NovaPoshtaStreet { get; set; }
+
+        public int Weight { get; set; }
+
+        // public string BuildingNumber { get; set; }
+        // public string Flat { get; set; }
     }
 }

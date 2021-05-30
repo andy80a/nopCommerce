@@ -691,6 +691,12 @@ namespace Nop.Web.Infrastructure
             endpointRouteBuilder.MapControllerRoute(name: "PageNotFound",
                 pattern: $"{lang}/page-not-found",
                 defaults: new { controller = "Common", action = "PageNotFound" });
+
+
+            endpointRouteBuilder.MapControllerRoute("DeliveryPricePopup",
+              pattern: "deliveryprice/{productId:min(0)}",
+              new { controller = "Delivery", action = "DeliveryPricePopup" });
+
         }
 
         #endregion

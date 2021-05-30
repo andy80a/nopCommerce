@@ -8,7 +8,7 @@ using Nop.Core;
 using Nop.Core.Caching;
 using Nop.Core.Domain.Localization;
 using Nop.Data;
-
+using Nop.Data.DataProviders;
 
 namespace Nop.Services.Localization
 {
@@ -22,7 +22,7 @@ namespace Nop.Services.Localization
         private readonly IRepository<LocalizedProperty> _localizedPropertyRepository;
         private readonly IStaticCacheManager _staticCacheManager;
         private readonly LocalizationSettings _localizationSettings;
-
+        
         #endregion
 
         #region Ctor
@@ -37,6 +37,7 @@ namespace Nop.Services.Localization
         }
 
         #endregion
+
 
         #region Utilities
 
@@ -115,6 +116,42 @@ namespace Nop.Services.Localization
 
         #region Methods
 
+        private Dictionary<string, string> FillLocalizedPropertiesDictionary()
+        {
+            var key = _staticCacheManager.PrepareKeyForDefaultCache(new CacheKey("LocalizedPropertyAllCacheKey"));
+            key.CacheTime = 3600;
+
+            return _staticCacheManager.Get(key, () =>
+            {
+                var provider = ((MsSqlNopDataProvider)
+                    ((Nop.Data.EntityRepository<Nop.Core.Domain.Localization.LocalizedProperty>)
+                        _localizedPropertyRepository)._dataProvider);
+
+                using var currentConnection = provider.GetDbConnection();
+                {
+                    //command to execute
+                    using (var cmd = currentConnection.CreateCommand())
+                    {
+                        //command to execute
+                        cmd.CommandText = @"SELECT  cast(LanguageId as varchar) + cast(EntityId as varchar) + '|' + cast (LocaleKeyGroup as varchar) + '|' + cast(LocaleKey as varchar) as col1, LocaleValue
+FROM LocalizedProperty
+WHERE LanguageId = 4 or LanguageId = 5";
+
+                        //database call
+                        var reader = cmd.ExecuteReader();
+
+                        var res = new Dictionary<string, string>(400000);
+                        while (reader.Read())
+                        {
+                            res[reader.GetString(0)] = reader.GetString(1);
+                        }
+                        reader.Close();
+                        return res;
+                    }
+                }
+            });
+        }
+
         /// <summary>
         /// Find localized value
         /// </summary>
@@ -128,6 +165,28 @@ namespace Nop.Services.Localization
         /// </returns>
         public virtual async Task<string> GetLocalizedValueAsync(int languageId, int entityId, string localeKeyGroup, string localeKey)
         {
+            if (languageId == 2 || languageId == 1)
+            {
+                return string.Empty;
+            }
+            if (languageId != 4 && languageId != 5)
+            {
+                throw new Exception("GetLocalizedValue invalid languageid:" + languageId);
+            }
+            var allLocalizedProperties = FillLocalizedPropertiesDictionary();
+
+            var key = languageId.ToString() + entityId + "|" + localeKeyGroup + "|" + localeKey;
+            string value;
+            if (!allLocalizedProperties.TryGetValue(key, out value))
+            {
+                return "";
+            }
+
+            if (value == null)
+                value = "";
+            return value;
+
+            /*
             var key = _staticCacheManager.PrepareKeyForDefaultCache(NopLocalizationDefaults.LocalizedPropertyCacheKey
                 , languageId, entityId, localeKeyGroup, localeKey);
 
@@ -151,6 +210,7 @@ namespace Nop.Services.Localization
 
                 return localeValue;
             });
+            */
         }
 
         /// <summary>

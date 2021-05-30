@@ -91,6 +91,16 @@ namespace Nop.Web.Validators.Common
             {
                 RuleFor(x => x.FaxNumber).NotEmpty().WithMessageAwait(localizationService.GetResourceAsync("Account.Fields.Fax.Required"));
             }
+
+
+            if (addressSettings.ApartmentRequired)
+            {
+                RuleFor(x => x.Apartment).NotEmpty().WithMessageAwait(localizationService.GetResourceAsync("Address.Fields.Apartment"));
+            }
+            if (addressSettings.BuildingRequired)
+            {
+                RuleFor(x => x.Building).NotEmpty().WithMessageAwait(localizationService.GetResourceAsync("Address.Fields.Building"));
+            }
         }
     }
 }

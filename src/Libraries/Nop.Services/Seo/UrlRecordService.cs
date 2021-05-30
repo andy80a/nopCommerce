@@ -8,6 +8,7 @@ using Nop.Core.Caching;
 using Nop.Core.Domain.Localization;
 using Nop.Core.Domain.Seo;
 using Nop.Data;
+using Nop.Data.DataProviders;
 using Nop.Services.Localization;
 
 namespace Nop.Services.Seo
@@ -28,6 +29,7 @@ namespace Nop.Services.Seo
         private readonly IWorkContext _workContext;
         private readonly LocalizationSettings _localizationSettings;
         private readonly SeoSettings _seoSettings;
+        private readonly INopDataProvider _nopDataProvider;
 
         #endregion
 
@@ -38,7 +40,8 @@ namespace Nop.Services.Seo
             IStaticCacheManager staticCacheManager,
             IWorkContext workContext,
             LocalizationSettings localizationSettings,
-            SeoSettings seoSettings)
+            SeoSettings seoSettings,
+            INopDataProvider nopDataProvider)
         {
             _languageService = languageService;
             _urlRecordRepository = urlRecordRepository;
@@ -46,12 +49,13 @@ namespace Nop.Services.Seo
             _workContext = workContext;
             _localizationSettings = localizationSettings;
             _seoSettings = seoSettings;
+            _nopDataProvider = nopDataProvider;
         }
 
         #endregion
 
         #region Utilities
-        
+
         /// <summary>
         /// Stores Unicode characters and their "normalized"
         /// values to a hash table. Character codes are referenced
@@ -1130,7 +1134,7 @@ namespace Nop.Services.Seo
         #endregion
 
         #region Methods
-        
+
         /// <summary>
         /// Deletes an URL records
         /// </summary>
@@ -1176,7 +1180,7 @@ namespace Nop.Services.Seo
         {
             if (string.IsNullOrEmpty(slug))
                 return null;
-            
+
             var key = _staticCacheManager.PrepareKeyForDefaultCache(NopSeoDefaults.UrlRecordBySlugCacheKey, slug);
 
             if (_localizationSettings.LoadAllUrlRecordsOnStartup)
@@ -1186,10 +1190,10 @@ namespace Nop.Services.Seo
                     //load all records (we know they are cached)
                     var source = await GetAllUrlRecordsAsync();
                     var urlRecords = from ur in source
-                        where ur.Slug.Equals(slug, StringComparison.InvariantCultureIgnoreCase)
-                        //first, try to find an active record
-                        orderby ur.IsActive descending, ur.Id
-                        select ur;
+                                     where ur.Slug.Equals(slug, StringComparison.InvariantCultureIgnoreCase)
+                                     //first, try to find an active record
+                                     orderby ur.IsActive descending, ur.Id
+                                     select ur;
                     var urlRecordForCaching = urlRecords.FirstOrDefault();
 
                     return urlRecordForCaching;
@@ -1198,10 +1202,10 @@ namespace Nop.Services.Seo
 
             //gradual loading
             var query = from ur in _urlRecordRepository.Table
-                where ur.Slug == slug
-                //first, try to find an active record
-                orderby ur.IsActive descending, ur.Id
-                select ur;
+                        where ur.Slug == slug
+                        //first, try to find an active record
+                        orderby ur.IsActive descending, ur.Id
+                        select ur;
 
             var urlRecord = await _staticCacheManager.GetAsync(key, async () => await query.FirstOrDefaultAsync());
 
@@ -1262,11 +1266,37 @@ namespace Nop.Services.Seo
 
             if (_localizationSettings.LoadAllUrlRecordsOnStartup)
             {
-                return await _staticCacheManager.GetAsync(key, async () =>
+                var allUrlRecords = await FillUrlRecordsDictionary();
+                var key1 = entityId + "|" + entityName + "|" + languageId;
+                string value;
+                if (!allUrlRecords.TryGetValue(key1, out value))
                 {
-                    //load all records (we know they are cached)
-                    var source = await GetAllUrlRecordsAsync();
-                    var urlRecords = from ur in source
+                    return "";
+                }
+                if (value == null)
+                    value = "";
+                return value;
+
+                //return await _staticCacheManager.GetAsync(key, async () =>
+                //{
+                //    //load all records (we know they are cached)
+                //    var source = await GetAllUrlRecordsAsync();
+                //    var urlRecords = from ur in source
+                //                     where ur.EntityId == entityId &&
+                //                           ur.EntityName == entityName &&
+                //                           ur.LanguageId == languageId &&
+                //                           ur.IsActive
+                //                     orderby ur.Id descending
+                //                     select ur.Slug;
+
+                //    //little hack here. nulls aren't cacheable so set it to ""
+                //    var slug = urlRecords.FirstOrDefault() ?? string.Empty;
+
+                //    return slug;
+                //});
+            }
+
+            var query = from ur in _urlRecordRepository.Table
                         where ur.EntityId == entityId &&
                               ur.EntityName == entityName &&
                               ur.LanguageId == languageId &&
@@ -1274,24 +1304,46 @@ namespace Nop.Services.Seo
                         orderby ur.Id descending
                         select ur.Slug;
 
-                    //little hack here. nulls aren't cacheable so set it to ""
-                    var slug = urlRecords.FirstOrDefault() ?? string.Empty;
-
-                    return slug;
-                });
-            }
-
-            var query = from ur in _urlRecordRepository.Table
-                where ur.EntityId == entityId &&
-                      ur.EntityName == entityName &&
-                      ur.LanguageId == languageId &&
-                      ur.IsActive
-                orderby ur.Id descending
-                select ur.Slug;
-
             var rezSlug = await _staticCacheManager.GetAsync(key, async () => await query.FirstOrDefaultAsync()) ?? string.Empty;
 
             return rezSlug;
+        }
+
+        private async Task<Dictionary<string, string>> FillUrlRecordsDictionary()
+        {
+            var key = _staticCacheManager.PrepareKeyForDefaultCache(new CacheKey(nameof(FillUrlRecordsDictionary)));
+            key.CacheTime = 3600;
+
+            return await _staticCacheManager.GetAsync(key, async () =>
+            {
+                var provider = (MsSqlNopDataProvider)_nopDataProvider;
+
+                using var connection = provider.GetDbConnection();
+                await connection.OpenAsync();
+
+                var res = new Dictionary<string, string>();
+                //command to execute
+                using (var cmd = connection.CreateCommand())
+                {
+                    //command to execute
+                    cmd.CommandText = @"SELECT 
+       cast([EntityId] as varchar) + '|' + [EntityName] + '|' + cast([LanguageId] as varchar),
+       [Slug]
+  FROM [UrlRecord] WHERE IsActive = 1
+  ORDER BY ID DESC";
+                    var reader = await cmd.ExecuteReaderAsync();
+                    while (await reader.ReadAsync())
+                    {
+                        var key1 = string.Format(reader.GetString(0));
+                        if (!res.ContainsKey(key1))
+                        {
+                            res.Add(key1, reader.GetString(1));
+                        }
+                    }
+                    reader.Close();
+                    return res;
+                }
+            });
         }
 
         /// <summary>
@@ -1435,7 +1487,7 @@ namespace Nop.Services.Seo
         {
             languageId ??= (await _workContext.GetWorkingLanguageAsync()).Id;
             var result = string.Empty;
-            
+
             if (languageId > 0)
             {
                 //ensure that we have at least two published languages

@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using LinqToDB.Data;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Nop.Core;
 using Nop.Core.Domain.Common;
 using Nop.Core.Domain.Customers;
@@ -9,6 +11,8 @@ using Nop.Core.Domain.Directory;
 using Nop.Core.Domain.Orders;
 using Nop.Core.Domain.Payments;
 using Nop.Core.Domain.Shipping;
+using Nop.Core.Infrastructure;
+using Nop.Data;
 using Nop.Services.Catalog;
 using Nop.Services.Common;
 using Nop.Services.Customers;
@@ -22,6 +26,7 @@ using Nop.Services.Stores;
 using Nop.Services.Tax;
 using Nop.Web.Models.Checkout;
 using Nop.Web.Models.Common;
+using static Nop.Web.Models.Checkout.CheckoutBillingAddressModel;
 
 namespace Nop.Web.Factories
 {
@@ -29,6 +34,9 @@ namespace Nop.Web.Factories
     {
         #region Fields
 
+        public static int UkrainianLanguageId = 4;
+
+        private readonly INopDataProvider _dataProvider;
         private readonly AddressSettings _addressSettings;
         private readonly CommonSettings _commonSettings;
         private readonly IAddressModelFactory _addressModelFactory;
@@ -62,7 +70,9 @@ namespace Nop.Web.Factories
 
         #region Ctor
 
-        public CheckoutModelFactory(AddressSettings addressSettings,
+        public CheckoutModelFactory(
+            INopDataProvider dataProvider,
+            AddressSettings addressSettings,
             CommonSettings commonSettings,
             IAddressModelFactory addressModelFactory,
             IAddressService addressService,
@@ -91,6 +101,7 @@ namespace Nop.Web.Factories
             RewardPointsSettings rewardPointsSettings,
             ShippingSettings shippingSettings)
         {
+            _dataProvider = dataProvider;
             _addressSettings = addressSettings;
             _commonSettings = commonSettings;
             _addressModelFactory = addressModelFactory;
@@ -140,7 +151,7 @@ namespace Nop.Web.Factories
                 AllowPickupInStore = _shippingSettings.AllowPickupInStore
             };
 
-            if (!model.AllowPickupInStore) 
+            if (!model.AllowPickupInStore)
                 return model;
 
             model.DisplayPickupPointsOnMap = _shippingSettings.DisplayPickupPointsOnMap;
@@ -210,6 +221,7 @@ namespace Nop.Web.Factories
                 model.PickupInStore = true;
                 return model;
             }
+
 
             return model;
         }
@@ -293,34 +305,41 @@ namespace Nop.Web.Factories
         /// A task that represents the asynchronous operation
         /// The task result contains the shipping address model
         /// </returns>
-        public virtual async Task<CheckoutShippingAddressModel> PrepareShippingAddressModelAsync(IList<ShoppingCartItem> cart, 
+        public virtual async Task<CheckoutShippingAddressModel> PrepareShippingAddressModelAsync(
+            AddressType type, int weight, int novaPoshtaRegionId, int novaPoshtaCityId,
+            IList<ShoppingCartItem> cart,
             int? selectedCountryId = null, bool prePopulateNewAddressWithCustomerFields = false, string overrideAttributesXml = "")
         {
+            var currentCustomer = await _workContext.GetCurrentCustomerAsync();
+            var workingLanguage = await _workContext.GetWorkingLanguageAsync();
+
             var model = new CheckoutShippingAddressModel
             {
-                DisplayPickupInStore = !_orderSettings.DisplayPickupInStoreOnShippingMethodPage
+                DisplayPickupInStore = !_orderSettings.DisplayPickupInStoreOnShippingMethodPage,
+                Type = type
             };
 
             if (!_orderSettings.DisplayPickupInStoreOnShippingMethodPage)
                 model.PickupPointsModel = await PrepareCheckoutPickupPointsModelAsync(cart);
 
             //existing addresses
-            var addresses = await (await _customerService.GetAddressesByCustomerIdAsync((await _workContext.GetCurrentCustomerAsync()).Id))
-                .WhereAwait(async a => !a.CountryId.HasValue || await _countryService.GetCountryByAddressAsync(a) is Country country &&
-                    (//published
-                    country.Published &&
-                    //allow shipping
-                    country.AllowsShipping &&
-                    //enabled for the current store
-                    await _storeMappingService.AuthorizeAsync(country)))
-                .ToListAsync();
+            var addresses = await _customerService.GetAddressesByCustomerIdAsync(currentCustomer.Id);
+            //.WhereAwait(async a => !a.CountryId.HasValue || await _countryService.GetCountryByAddressAsync(a) is Country country &&
+            //    (//published
+            //    country.Published &&
+            //    //allow shipping
+            //    country.AllowsShipping &&
+            //    //enabled for the current store
+            //    await _storeMappingService.AuthorizeAsync(country)))
+            //.ToListAsync();
             foreach (var address in addresses)
             {
                 var addressModel = new AddressModel();
                 await _addressModelFactory.PrepareAddressModelAsync(addressModel,
                     address: address,
                     excludeProperties: false,
-                    addressSettings: _addressSettings);
+                    addressSettings: _addressSettings,
+                    type: type);
 
                 if (await _addressService.IsAddressValidAsync(address))
                 {
@@ -340,8 +359,201 @@ namespace Nop.Web.Factories
                 addressSettings: _addressSettings,
                 loadCountries: async () => await _countryService.GetAllCountriesForShippingAsync((await _workContext.GetWorkingLanguageAsync()).Id),
                 prePopulateWithCustomerFields: prePopulateNewAddressWithCustomerFields,
-                customer: await _workContext.GetCurrentCustomerAsync(),
-                overrideAttributesXml: overrideAttributesXml);
+                customer: currentCustomer,
+                overrideAttributesXml: overrideAttributesXml,
+                type: type);
+
+
+
+
+
+
+            if (type == AddressType.NovaPoshtaWarehouse)
+            {
+                model.ExistingAddresses.Clear();
+                model.ShippingNewAddress.NovaPoshtaCity = new List<SelectListItem>();
+                model.ShippingNewAddress.NovaPoshtaWarehouse = new List<SelectListItem>();
+
+                var selectedShippingOption = await _genericAttributeService.GetAttributeAsync<ShippingOption>(currentCustomer, NopCustomerDefaults.SelectedShippingOptionAttribute, (await _storeContext.GetCurrentStoreAsync()).Id);
+
+                if (selectedShippingOption.Name.ToLower().Contains("обр"))
+                {
+                    weight = Math.Max(31, weight);
+                }
+                model.ShippingNewAddress.Weight = weight;
+                model.ShippingNewAddress.NovaPoshtaCityId = novaPoshtaCityId;//київ
+                if (novaPoshtaCityId == 0)
+                {
+                    if (currentCustomer != null)
+                    {
+                        var cityId = await _genericAttributeService.GetAttributeAsync<int>(currentCustomer, NopCustomerDefaults.NovaPoshtaCityId);
+
+                        if (cityId > 0)
+                        {
+                            model.ShippingNewAddress.NovaPoshtaCityId = cityId;
+                        }
+                    }
+                }
+
+                if (workingLanguage.Id == UkrainianLanguageId)
+                {
+                    PrepareNovaPoshtaWarehouseInfoUa(weight, model);
+                }
+                else
+                {
+                    PrepareNovaPoshtaWarehouseInfoRu(weight, model);
+                }
+            }
+            else if (type == AddressType.NovaPoshtaAddress)
+            {
+                model.ExistingAddresses.Clear();
+                model.ShippingNewAddress.NovaPoshtaCity = new List<SelectListItem>();
+                model.ShippingNewAddress.NovaPoshtaStreet = new List<SelectListItem>();
+                model.ShippingNewAddress.Weight = weight;
+
+                model.ShippingNewAddress.NovaPoshtaCityId = novaPoshtaCityId;//київ
+                if (novaPoshtaCityId == 0)
+                {
+                    if (currentCustomer != null)
+                    {
+                        var cityId = await _genericAttributeService.GetAttributeAsync<int>(currentCustomer, NopCustomerDefaults.NovaPoshtaCityId);
+
+                        if (cityId > 0)
+                        {
+                            model.ShippingNewAddress.NovaPoshtaCityId = cityId;
+                        }
+
+                        var streetId = await _genericAttributeService.GetAttributeAsync<int>(currentCustomer, NopCustomerDefaults.NovaPoshtaStreetId);
+                        if (streetId > 0)
+                        {
+                            model.ShippingNewAddress.NovaPoshtaStreetId = streetId;
+                        }
+                    }
+                }
+
+                if (workingLanguage.Id == UkrainianLanguageId)
+                {
+                    PrepareNovaPoshtaStreetInfoUa(model);
+                }
+                else
+                {
+                    PrepareNovaPoshtaStreetInfoRu(model);
+                }
+            }
+            else///////////////////////////////
+               if (type == AddressType.SATWarehouse)
+            {
+                model.ExistingAddresses.Clear();
+                model.ShippingNewAddress.NovaPoshtaCity = new List<SelectListItem>();
+                model.ShippingNewAddress.NovaPoshtaWarehouse = new List<SelectListItem>();
+
+                model.ShippingNewAddress.Weight = weight;
+                model.ShippingNewAddress.NovaPoshtaCityId = novaPoshtaCityId;//київ
+                if (novaPoshtaCityId == 0)
+                {
+                    if (currentCustomer != null)
+                    {
+                        var cityId = await _genericAttributeService.GetAttributeAsync<int>(currentCustomer, NopCustomerDefaults.SATCityId);
+
+                        if (cityId != 0)
+                        {
+                            model.ShippingNewAddress.NovaPoshtaCityId = cityId;
+                        }
+                    }
+                }
+
+                PrepareSATWarehouseInfo(model);
+
+            }
+            else if (type == AddressType.SATAddress)
+            {
+                model.ExistingAddresses.Clear();
+                model.ShippingNewAddress.NovaPoshtaCity = new List<SelectListItem>();
+                model.ShippingNewAddress.NovaPoshtaStreet = new List<SelectListItem>();
+                model.ShippingNewAddress.Weight = weight;
+                model.ShippingNewAddress.NovaPoshtaCityId = novaPoshtaCityId;
+                if (novaPoshtaRegionId == 0)
+                {
+                    if (currentCustomer != null)
+                    {
+                        var cityId = await _genericAttributeService.GetAttributeAsync<int>(currentCustomer, NopCustomerDefaults.SATCityId);
+                        if (cityId != 0)
+                        {
+                            model.ShippingNewAddress.NovaPoshtaCityId = cityId;
+                        }
+
+                        var streetId = await _genericAttributeService.GetAttributeAsync<int>(currentCustomer, NopCustomerDefaults.SATStreetId);
+                        if (streetId != 0)
+                        {
+                            model.ShippingNewAddress.NovaPoshtaStreetId = streetId;
+                        }
+                    }
+                }
+
+                PrepareSATInfo(model);
+            }
+            else///////////////////////////////
+               if (type == AddressType.MeestWarehouse)
+            {
+                model.ExistingAddresses.Clear();
+                model.ShippingNewAddress.NovaPoshtaCity = new List<SelectListItem>();
+                model.ShippingNewAddress.NovaPoshtaWarehouse = new List<SelectListItem>();
+
+                model.ShippingNewAddress.Weight = weight;
+                model.ShippingNewAddress.NovaPoshtaCityId = novaPoshtaCityId;//київ
+                if (novaPoshtaCityId == 0)
+                {
+                    if (currentCustomer != null)
+                    {
+                        var cityId = await _genericAttributeService.GetAttributeAsync<int>(currentCustomer, NopCustomerDefaults.MeestCityId);
+
+                        if (cityId > 0)
+                        {
+                            model.ShippingNewAddress.NovaPoshtaCityId = cityId;
+                        }
+                    }
+                }
+
+                PrepareMeestWarehouseInfo(weight, model);
+            }
+            else if (type == AddressType.MeestAddress)
+            {
+                model.ExistingAddresses.Clear();
+                model.ShippingNewAddress.NovaPoshtaRegion = new List<SelectListItem>();
+                model.ShippingNewAddress.NovaPoshtaCity = new List<SelectListItem>();
+                model.ShippingNewAddress.NovaPoshtaStreet = new List<SelectListItem>();
+                model.ShippingNewAddress.Weight = weight;
+
+                model.ShippingNewAddress.NovaPoshtaRegionId = novaPoshtaRegionId;//київ
+                model.ShippingNewAddress.NovaPoshtaCityId = novaPoshtaCityId;
+                if (novaPoshtaRegionId == 0)
+                {
+                    if (currentCustomer != null)
+                    {
+                        var regionId = await _genericAttributeService.GetAttributeAsync<int>(currentCustomer, NopCustomerDefaults.MeestRegionId);
+
+                        if (regionId > 0)
+                        {
+                            model.ShippingNewAddress.NovaPoshtaRegionId = regionId;
+                        }
+
+                        var cityId = await _genericAttributeService.GetAttributeAsync<int>(currentCustomer, NopCustomerDefaults.MeestCityId);
+                        if (cityId > 0)
+                        {
+                            model.ShippingNewAddress.NovaPoshtaCityId = cityId;
+                        }
+
+                        var streetId = await _genericAttributeService.GetAttributeAsync<int>(currentCustomer, NopCustomerDefaults.MeestStreetId);
+                        if (streetId > 0)
+                        {
+                            model.ShippingNewAddress.NovaPoshtaStreetId = streetId;
+                        }
+                    }
+                }
+
+                PrepareMeestRegionInfo(model);
+            }
+
 
             return model;
         }
@@ -595,7 +807,7 @@ namespace Nop.Web.Factories
         public virtual Task<CheckoutProgressModel> PrepareCheckoutProgressModelAsync(CheckoutProgressStep step)
         {
             var model = new CheckoutProgressModel { CheckoutProgressStep = step };
-            
+
             return Task.FromResult(model);
         }
 
@@ -622,5 +834,728 @@ namespace Nop.Web.Factories
         }
 
         #endregion
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        private async Task PrepareNovaPoshtaWarehouseInfoUa(int weight, CheckoutShippingAddressModel model)
+        {
+            var cities = await _dataProvider.QueryAsync<NovaPoshtaCity>(@"SELECT 
+      [cityId] as Id, [nameUa] as Name
+     FROM NovaPoshta_City ORDER BY [nameUa]");
+            model.ShippingNewAddress.NovaPoshtaCity.Add(new SelectListItem()
+            {
+                Text = "Місто",
+                Value = "0",
+                Selected = model.ShippingNewAddress.NovaPoshtaCityId == 0
+            });
+            foreach (var c in cities)
+            {
+                model.ShippingNewAddress.NovaPoshtaCity.Add(new SelectListItem()
+                {
+                    Text = c.Name,
+                    Value = c.Id.ToString(),
+                    Selected = c.Id == model.ShippingNewAddress.NovaPoshtaCityId
+                });
+            }
+            var warehouses = await _dataProvider.QueryAsync<NovaPoshtaWarehouse>(@"SELECT 
+      [cityId] as CityId
+      ,[wareId] as WareId
+      ,[addressUa] as Address
+   
+     FROM NovaPoshta_Warehouse WHERE cityId = " + model.ShippingNewAddress.NovaPoshtaCityId +
+                                                                     " AND max_weight_allowed > " + weight
+                                                                       + " ORDER BY Number");
+
+            model.ShippingNewAddress.NovaPoshtaWarehouse.Add(new SelectListItem()
+            {
+                Text = await _localizationService.GetResourceAsync("Custom.Warehouse"),
+                Value = "0",
+                Selected = model.ShippingNewAddress.NovaPoshtaWarehouseId == 0
+            });
+            foreach (var c in warehouses)
+            {
+                model.ShippingNewAddress.NovaPoshtaWarehouse.Add(new SelectListItem()
+                {
+                    Text = c.Address,
+                    Value = c.WareId.ToString(),
+                    Selected = c.WareId == model.ShippingNewAddress.NovaPoshtaWarehouseId
+                });
+            }
+        }
+
+        private async Task PrepareSATWarehouseInfo(CheckoutShippingAddressModel model)
+        {
+            var cities = await _dataProvider.QueryAsync<NovaPoshtaCity>(@"SELECT 
+      [cityId] as Id, [name] as Name
+     FROM SAT_City 
+	 ORDER BY [name]");
+            model.ShippingNewAddress.NovaPoshtaCity.Add(new SelectListItem()
+            {
+                Text = "Місто",
+                Value = "0",
+                Selected = model.ShippingNewAddress.NovaPoshtaCityId == 0
+            });
+            foreach (var c in cities)
+            {
+                model.ShippingNewAddress.NovaPoshtaCity.Add(new SelectListItem()
+                {
+                    Text = c.Name,
+                    Value = c.Id.ToString(),
+                    Selected = c.Id == model.ShippingNewAddress.NovaPoshtaCityId
+                });
+            }
+            var warehouses = await _dataProvider.QueryAsync<NovaPoshtaWarehouse>(@"SELECT 
+      [cityId] as CityId
+      ,[wareId] as WareId
+      ,[address] as Address
+   
+     FROM SAT_Warehouse WHERE cityId = " + model.ShippingNewAddress.NovaPoshtaCityId + " ORDER BY Number");
+
+            model.ShippingNewAddress.NovaPoshtaWarehouse.Add(new SelectListItem()
+            {
+                Text = await _localizationService.GetResourceAsync("Custom.Warehouse"),
+                Value = "0",
+                Selected = model.ShippingNewAddress.NovaPoshtaWarehouseId == 0
+            });
+            foreach (var c in warehouses)
+            {
+                model.ShippingNewAddress.NovaPoshtaWarehouse.Add(new SelectListItem()
+                {
+                    Text = c.Address,
+                    Value = c.WareId.ToString(),
+                    Selected = c.WareId == model.ShippingNewAddress.NovaPoshtaWarehouseId
+                });
+            }
+        }
+
+        private async Task PrepareMeestWarehouseInfo(int weight, CheckoutShippingAddressModel model)
+        {
+            var cities = await _dataProvider.QueryAsync<NovaPoshtaCity>(@"SELECT 
+      [cityId] as Id, [nameUa] as Name
+     FROM Meest_City 
+	 WHERE CityId in (SELECT CityId FROM Meest_Warehouse)
+	 ORDER BY [nameUa]");
+            model.ShippingNewAddress.NovaPoshtaCity.Add(new SelectListItem()
+            {
+                Text = "Місто",
+                Value = "0",
+                Selected = model.ShippingNewAddress.NovaPoshtaCityId == 0
+            });
+            foreach (var c in cities)
+            {
+                model.ShippingNewAddress.NovaPoshtaCity.Add(new SelectListItem()
+                {
+                    Text = c.Name,
+                    Value = c.Id.ToString(),
+                    Selected = c.Id == model.ShippingNewAddress.NovaPoshtaCityId
+                });
+            }
+            var warehouses = await _dataProvider.QueryAsync<NovaPoshtaWarehouse>(@"SELECT 
+      [cityId] as CityId
+      ,[wareId] as WareId
+      ,[addressUa] as Address
+   
+     FROM Meest_Warehouse WHERE cityId = " + model.ShippingNewAddress.NovaPoshtaCityId +
+                                                                     " AND max_weight_allowed > " + weight
+                                                                       + " ORDER BY [addressUa]");
+
+            model.ShippingNewAddress.NovaPoshtaWarehouse.Add(new SelectListItem()
+            {
+                Text = await _localizationService.GetResourceAsync("Custom.Warehouse"),
+                Value = "0",
+                Selected = model.ShippingNewAddress.NovaPoshtaWarehouseId == 0
+            });
+            foreach (var c in warehouses)
+            {
+                model.ShippingNewAddress.NovaPoshtaWarehouse.Add(new SelectListItem()
+                {
+                    Text = c.Address,
+                    Value = c.WareId.ToString(),
+                    Selected = c.WareId == model.ShippingNewAddress.NovaPoshtaWarehouseId
+                });
+            }
+        }
+
+        private async Task PrepareNovaPoshtaWarehouseInfoRu(int weight, CheckoutShippingAddressModel model)
+        {
+            var cities = await _dataProvider.QueryAsync<NovaPoshtaCity>(@"SELECT 
+      [cityId] as Id, [nameRu] as Name
+     FROM NovaPoshta_City ORDER BY [nameRu]");
+            model.ShippingNewAddress.NovaPoshtaCity.Add(new SelectListItem()
+            {
+                Text = "Город",
+                Value = "0",
+                Selected = model.ShippingNewAddress.NovaPoshtaCityId == 0
+            });
+            foreach (var c in cities)
+            {
+                model.ShippingNewAddress.NovaPoshtaCity.Add(new SelectListItem()
+                {
+                    Text = c.Name,
+                    Value = c.Id.ToString(),
+                    Selected = c.Id == model.ShippingNewAddress.NovaPoshtaCityId
+                });
+            }
+            var warehouses = await _dataProvider.QueryAsync<NovaPoshtaWarehouse>(@"SELECT 
+      [cityId] as CityId
+      ,[wareId] as WareId
+      ,[addressRu] as Address
+         FROM NovaPoshta_Warehouse WHERE cityId = " + model.ShippingNewAddress.NovaPoshtaCityId +
+                                                                     " AND max_weight_allowed > " + weight
+                                                                       + " ORDER BY Number");
+
+            model.ShippingNewAddress.NovaPoshtaWarehouse.Add(new SelectListItem()
+            {
+                Text = await _localizationService.GetResourceAsync("Custom.Warehouse"),
+                Value = "0",
+                Selected = model.ShippingNewAddress.NovaPoshtaWarehouseId == 0
+            });
+            foreach (var c in warehouses)
+            {
+                model.ShippingNewAddress.NovaPoshtaWarehouse.Add(new SelectListItem()
+                {
+                    Text = c.Address,
+                    Value = c.WareId.ToString(),
+                    Selected = c.WareId == model.ShippingNewAddress.NovaPoshtaWarehouseId
+                });
+            }
+        }
+
+        public class NovaPoshtaCity
+        {
+            public int Id { get; set; }
+            public int RegionId { get; set; }
+            public string Name { get; set; }
+        }
+
+        public class NovaPoshtaRegion
+        {
+            public int Id { get; set; }
+            public string Name { get; set; }
+        }
+
+
+        public class NovaPoshtaWarehouse
+        {
+            public int CityId { get; set; }
+            public int WareId { get; set; }
+            public int Number { get; set; }
+            public string City { get; set; }
+            public string Address { get; set; }
+        }
+
+        public class NovaPoshtaStreet
+        {
+            public int RegionId { get; set; }
+            public int CityId { get; set; }
+            public int Id { get; set; }
+            public string Name { get; set; }
+            public string City { get; set; }
+
+        }
+
+        public async Task<(bool result, string city, string address)> GetNovaPoshtaCityAndAddressWarehouse(int warehouseId)
+        {
+            var workingLanguage = await _workContext.GetWorkingLanguageAsync();
+            var currentCustomer = await _workContext.GetCurrentCustomerAsync();
+
+            string city;
+            string address;
+
+            NovaPoshtaWarehouse warehouse;
+            if (workingLanguage.Id == UkrainianLanguageId)
+            {
+                warehouse =
+                    (await _dataProvider.QueryAsync<NovaPoshtaWarehouse>(@"SELECT c.NameUa as City, AddressUa as Address, w.CityId as CityId
+                        FROM [dbo].[NovaPoshta_Warehouse] w INNER JOIN [dbo].[NovaPoshta_City] c on w.CityId = c.CityId
+                        WHERE w.WareId = " + warehouseId)).FirstOrDefault();
+            }
+            else
+            {
+                warehouse =
+                    (await _dataProvider.QueryAsync<NovaPoshtaWarehouse>(@"SELECT c.NameRu as City, AddressRu as Address, w.CityId as CityId
+                        FROM [dbo].[NovaPoshta_Warehouse] w INNER JOIN [dbo].[NovaPoshta_City] c on w.CityId = c.CityId
+                        WHERE WareId = " + warehouseId)).FirstOrDefault();
+            }
+
+            if (warehouse == null)
+            {
+                city = address = string.Empty;
+
+                return (false, city, address);
+            }
+
+            if (currentCustomer != null)
+            {
+                await _genericAttributeService.SaveAttributeAsync(currentCustomer, NopCustomerDefaults.NovaPoshtaCityId, warehouse.CityId);
+            }
+
+            city = warehouse.City;
+            address = warehouse.Address;
+            return (false, city, address);
+        }
+
+        public async Task<(bool result, string city, string address)> GetNovaPoshtaCityAndAddressStreet(int streetId)
+        {
+            var workingLanguage = await _workContext.GetWorkingLanguageAsync();
+            var currentCustomer = await _workContext.GetCurrentCustomerAsync();
+
+            string city;
+            string address;
+
+            NovaPoshtaStreet street;
+            if (workingLanguage.Id == UkrainianLanguageId)
+            {
+                street =
+                    (await _dataProvider.QueryAsync<NovaPoshtaStreet>(@"SELECT c.NameUa as City, w.Name as Name, w.CityId as CityId
+                        FROM [dbo].[NovaPoshta_Street] w INNER JOIN [dbo].[NovaPoshta_City] c on w.CityId = c.CityId
+                        WHERE w.Id = " + streetId)).FirstOrDefault();
+            }
+            else
+            {
+                street =
+                    (await _dataProvider.QueryAsync<NovaPoshtaStreet>(@"SELECT c.NameRu as City, w.Name as Name, w.CityId as CityId
+                        FROM [dbo].[NovaPoshta_Street] w INNER JOIN [dbo].[NovaPoshta_City] c on w.CityId = c.CityId
+                        WHERE w.Id = " + streetId)).FirstOrDefault();
+            }
+
+            if (street == null)
+            {
+                city = address = string.Empty;
+
+                return (false, city, address);
+            }
+
+            if (currentCustomer != null)
+            {
+                await _genericAttributeService.SaveAttributeAsync(currentCustomer, NopCustomerDefaults.NovaPoshtaCityId, street.CityId);
+                await _genericAttributeService.SaveAttributeAsync(currentCustomer, NopCustomerDefaults.NovaPoshtaStreetId, streetId);
+            }
+
+            city = street.City;
+            address = street.Name;
+            return (false, city, address);
+        }
+        //SAT
+        public async Task<(bool result, string city, string address)> GetSATCityAndAddressWarehouse(int warehouseId)
+        {
+            var workingLanguage = await _workContext.GetWorkingLanguageAsync();
+            var currentCustomer = await _workContext.GetCurrentCustomerAsync();
+
+            string city;
+            string address;
+
+            NovaPoshtaWarehouse warehouse;
+
+            warehouse =
+                (await _dataProvider.QueryAsync<NovaPoshtaWarehouse>(@"SELECT c.Name as City, Address as Address, w.CityId as CityId
+                        FROM [dbo].[SAT_Warehouse] w INNER JOIN [dbo].[SAT_City] c on w.CityId = c.CityId
+                        WHERE w.WareId = " + warehouseId)).FirstOrDefault();
+
+
+            if (warehouse == null)
+            {
+                city = address = string.Empty;
+
+                return (false, city, address);
+            }
+
+            city = warehouse.City;
+            address = warehouse.Address;
+            if (currentCustomer != null)
+            {
+                await _genericAttributeService.SaveAttributeAsync(currentCustomer, NopCustomerDefaults.SATCityId, warehouse.CityId);
+            }
+            return (false, city, address);
+        }
+
+        public async Task<(bool result, string city, string address)> GetSATCityAndAddressStreet(int streetId)
+        {
+            var currentCustomer = await _workContext.GetCurrentCustomerAsync();
+
+            string city;
+            string address;
+
+            var street =
+                (await _dataProvider.QueryAsync<NovaPoshtaStreet>(@"
+SELECT 
+      S.Name as City
+      ,N.Name as Name
+      ,S.CityId as CityId
+     FROM NovaPoshta_Street N 
+        INNER JOIN [Sat_City] S ON S.[NovaPoshtaCityId]= N.cityId WHERE N.Id = @Id", new DataParameter("Id", streetId)))
+                    .FirstOrDefault();
+
+            if (street == null)
+            {
+                city = address = string.Empty;
+
+                return (false, city, address);
+            }
+
+            if (currentCustomer != null)
+            {
+                await _genericAttributeService.SaveAttributeAsync(currentCustomer, NopCustomerDefaults.SATCityId, street.CityId);
+                await _genericAttributeService.SaveAttributeAsync(currentCustomer, NopCustomerDefaults.SATStreetId, streetId);
+            }
+
+            city = street.City;
+            address = street.Name;
+            return (false, city, address);
+        }
+
+        //meest
+        public async Task<(bool result, string city, string address)> GetMeestCityAndAddressWarehouse(int warehouseId)
+        {
+            var currentCustomer = await _workContext.GetCurrentCustomerAsync();
+
+            string city;
+            string address;
+
+            var warehouse =
+                (await _dataProvider.QueryAsync<NovaPoshtaWarehouse>(@"SELECT c.NameUa as City, AddressUa as Address, w.CityId as CityId
+                        FROM [dbo].[Meest_Warehouse] w INNER JOIN [dbo].[Meest_City] c on w.CityId = c.CityId
+                        WHERE w.WareId = " + warehouseId)).FirstOrDefault();
+
+
+            if (warehouse == null)
+            {
+                city = address = string.Empty;
+
+                return (false, city, address);
+            }
+
+            if (currentCustomer != null)
+            {
+                await _genericAttributeService.SaveAttributeAsync(currentCustomer, NopCustomerDefaults.MeestCityId, warehouse.CityId);
+            }
+
+            city = warehouse.City;
+            address = warehouse.Address;
+            return (false, city, address);
+        }
+
+        public async Task<(bool result, string city, string address)> GetMeestCityAndAddressStreet(int streetId)
+        {
+            var workingLanguage = await _workContext.GetWorkingLanguageAsync();
+            var currentCustomer = await _workContext.GetCurrentCustomerAsync();
+
+            string city;
+            string address;
+
+            var street =
+                (await _dataProvider.QueryAsync<NovaPoshtaStreet>(@"SELECT c.regionId as RegionId, c.NameUa as City, w.Name as Name, w.CityId as CityId
+                        FROM [dbo].[Meest_Street] w INNER JOIN [dbo].[Meest_City] c on w.CityId = c.CityId
+                        WHERE w.Id = " + streetId)).FirstOrDefault();
+
+            if (street == null)
+            {
+                city = address = string.Empty;
+                return (false, city, address);
+            }
+
+            if (currentCustomer != null)
+            {
+                await _genericAttributeService.SaveAttributeAsync(currentCustomer, NopCustomerDefaults.MeestCityId, street.CityId);
+                await _genericAttributeService.SaveAttributeAsync(currentCustomer, NopCustomerDefaults.MeestStreetId, streetId);
+                await _genericAttributeService.SaveAttributeAsync(currentCustomer, NopCustomerDefaults.MeestRegionId, street.RegionId);
+            }
+
+            city = street.City;
+            address = street.Name;
+            return (false, city, address);
+        }
+
+        public async Task<(AddressType type, int weight)> GetNovaPoshtaStatus()
+        {
+            var currentCustomer = await _workContext.GetCurrentCustomerAsync();
+            var currentStore = await _storeContext.GetCurrentStoreAsync();
+
+            var weight = 0;
+            AddressType addressType;
+            //validation
+
+            var cart = await _shoppingCartService.GetShoppingCartAsync(currentCustomer, ShoppingCartType.ShoppingCart, currentStore.Id);
+
+            var selectedShippingOption = await _genericAttributeService.GetAttributeAsync<ShippingOption>(currentCustomer, NopCustomerDefaults.SelectedShippingOptionAttribute, currentStore.Id);
+
+            if (selectedShippingOption.Name.ToLower().Contains("склад") ||
+                selectedShippingOption.Name.ToLower().Contains("ідділення") ||
+            selectedShippingOption.Name.ToLower().Contains("тделение"))
+            {
+                //int maxLength = 0;
+                //decimal totalWeight = 0;
+
+                foreach (var item in cart)
+                {
+                    //totalWeight = totalWeight + Math.Max(item.Product.Weight, item.Product.VolumeWeight) * item.Quantity;
+                    //maxLength = Math.Max(maxLength, item.Product.MaxLength);
+                }
+
+                //if (totalWeight > 1000)
+                //{
+                //    totalWeight = 999;
+                //}
+                //weight = (int)totalWeight;
+                if (selectedShippingOption.Name.ToLower().Contains("нова"))
+                {
+                    addressType = AddressType.NovaPoshtaWarehouse;
+                    //if (maxLength > 120)
+                    //{
+                    //    weight = (int)Math.Max(totalWeight, 31);
+                    //}
+                }
+                else if (selectedShippingOption.Name.ToLower().Contains("кспр"))
+                {
+                    addressType = AddressType.MeestWarehouse;
+                }
+                else
+                {
+                    addressType = AddressType.SATWarehouse;
+                }
+
+                return (addressType, weight);
+            }
+            if (selectedShippingOption.Name.ToLower().Contains("нова"))
+            {
+                addressType = AddressType.NovaPoshtaAddress;
+            }
+            else
+            if (selectedShippingOption.Name.ToLower().Contains("sat"))
+            {
+                addressType = AddressType.SATAddress;
+            }
+            else if (selectedShippingOption.Name.ToLower().Contains("кспр"))
+            {
+                addressType = AddressType.MeestAddress;
+            }
+            else
+            {
+                addressType = AddressType.Address;
+            }
+
+            return (addressType, weight);
+        }
+
+
+        #region NP related
+        private async Task PrepareNovaPoshtaStreetInfoUa(CheckoutShippingAddressModel model)
+        {
+            var cities = await _dataProvider.QueryAsync<NovaPoshtaCity>(@"SELECT 
+      [cityId] as Id, [nameUa] as Name
+     FROM NovaPoshta_City ORDER BY [nameUa]");
+            model.ShippingNewAddress.NovaPoshtaCity.Add(new SelectListItem()
+            {
+                Text = "Місто",
+                Value = "0",
+                Selected = model.ShippingNewAddress.NovaPoshtaCityId == 0
+            });
+            foreach (var c in cities)
+            {
+                model.ShippingNewAddress.NovaPoshtaCity.Add(new SelectListItem()
+                {
+                    Text = c.Name,
+                    Value = c.Id.ToString(),
+                    Selected = c.Id == model.ShippingNewAddress.NovaPoshtaCityId
+                });
+            }
+            var warehouses = await _dataProvider.QueryAsync<NovaPoshtaStreet>(@"SELECT 
+      [cityId] as CityId
+      ,[Id] as Id
+      ,[Name] as Name
+     FROM NovaPoshta_Street WHERE cityId = " + model.ShippingNewAddress.NovaPoshtaCityId + " ORDER BY Name");
+
+            model.ShippingNewAddress.NovaPoshtaStreet.Add(new SelectListItem()
+            {
+                Text = "Вулиця",
+                Value = "0",
+                Selected = model.ShippingNewAddress.NovaPoshtaStreetId == 0
+            });
+            foreach (var c in warehouses)
+            {
+                model.ShippingNewAddress.NovaPoshtaStreet.Add(new SelectListItem()
+                {
+                    Text = c.Name,
+                    Value = c.Id.ToString(),
+                    Selected = c.Id == model.ShippingNewAddress.NovaPoshtaStreetId
+                });
+            }
+        }
+
+        private async Task PrepareNovaPoshtaStreetInfoRu(CheckoutShippingAddressModel model)
+        {
+            var cities = await _dataProvider.QueryAsync<NovaPoshtaCity>(@"SELECT 
+      [cityId] as Id, [nameRu] as Name
+     FROM NovaPoshta_City ORDER BY [nameRu]");
+            model.ShippingNewAddress.NovaPoshtaCity.Add(new SelectListItem()
+            {
+                Text = "Город",
+                Value = "0",
+                Selected = model.ShippingNewAddress.NovaPoshtaCityId == 0
+            });
+            foreach (var c in cities)
+            {
+                model.ShippingNewAddress.NovaPoshtaCity.Add(new SelectListItem()
+                {
+                    Text = c.Name,
+                    Value = c.Id.ToString(),
+                    Selected = c.Id == model.ShippingNewAddress.NovaPoshtaCityId
+                });
+            }
+            var warehouses = await _dataProvider.QueryAsync<NovaPoshtaStreet>(@"SELECT 
+      [cityId] as CityId
+      ,[Id] as Id
+      ,[Name] as Name
+     FROM NovaPoshta_Street WHERE cityId = " + model.ShippingNewAddress.NovaPoshtaCityId + " ORDER BY Name");
+
+            model.ShippingNewAddress.NovaPoshtaStreet.Add(new SelectListItem()
+            {
+                Text = "Вулиця",
+                Value = "0",
+                Selected = model.ShippingNewAddress.NovaPoshtaStreetId == 0
+            });
+            foreach (var c in warehouses)
+            {
+                model.ShippingNewAddress.NovaPoshtaStreet.Add(new SelectListItem()
+                {
+                    Text = c.Name,
+                    Value = c.Id.ToString(),
+                    Selected = c.Id == model.ShippingNewAddress.NovaPoshtaStreetId
+                });
+            }
+        }
+
+        private async Task PrepareSATInfo(CheckoutShippingAddressModel model)
+        {
+            var cities = await _dataProvider.QueryAsync<NovaPoshtaStreet>(@"SELECT 
+      
+      cityid as Id
+      ,[Name] as Name
+     FROM SAT_City ORDER BY Name");
+
+            model.ShippingNewAddress.NovaPoshtaCity.Add(new SelectListItem()
+            {
+                Text = "Місто",
+                Value = "0",
+                Selected = model.ShippingNewAddress.NovaPoshtaCityId == 0
+            });
+            foreach (var c in cities)
+            {
+                model.ShippingNewAddress.NovaPoshtaCity.Add(new SelectListItem()
+                {
+                    Text = c.Name,
+                    Value = c.Id.ToString(),
+                    Selected = c.Id == model.ShippingNewAddress.NovaPoshtaCityId
+                });
+            }
+
+            var warehouses = await _dataProvider.QueryAsync<NovaPoshtaStreet>(@"SELECT 
+      S.[cityId] as CityId
+      ,N.[Id] as Id
+      ,N.[Name] as Name
+     FROM NovaPoshta_Street N 
+        INNER JOIN [Sat_City] S ON S.[NovaPoshtaCityId]= N.cityId WHERE S.cityId = " + model.ShippingNewAddress.NovaPoshtaCityId + " AND n.Name not like '% с.' AND n.Name not like '% с-ще.' AND n.Name not like '% смт.' ORDER BY N.Name");
+
+            model.ShippingNewAddress.NovaPoshtaStreet.Add(new SelectListItem()
+            {
+                Text = "Вулиця",
+                Value = "0",
+                Selected = model.ShippingNewAddress.NovaPoshtaStreetId == 0
+            });
+            foreach (var c in warehouses)
+            {
+                model.ShippingNewAddress.NovaPoshtaStreet.Add(new SelectListItem()
+                {
+                    Text = c.Name,
+                    Value = c.Id.ToString(),
+                    Selected = c.Id == model.ShippingNewAddress.NovaPoshtaStreetId
+                });
+            }
+        }
+
+        private async Task PrepareMeestRegionInfo(CheckoutShippingAddressModel model)
+        {
+            var regions = await _dataProvider.QueryAsync<NovaPoshtaRegion>(@"
+  SELECT [RegionId] as Id
+      ,[nameUa] as Name
+  FROM [Meest_Region]
+  ORDER BY [nameUa]
+");
+            model.ShippingNewAddress.NovaPoshtaRegion.Add(new SelectListItem()
+            {
+                Text = "Область",
+                Value = "0",
+                Selected = model.ShippingNewAddress.NovaPoshtaRegionId == 0
+            });
+            foreach (var c in regions)
+            {
+                model.ShippingNewAddress.NovaPoshtaRegion.Add(new SelectListItem()
+                {
+                    Text = c.Name,
+                    Value = c.Id.ToString(),
+                    Selected = c.Id == model.ShippingNewAddress.NovaPoshtaRegionId
+                });
+            }
+
+            var cities = await _dataProvider.QueryAsync<NovaPoshtaStreet>(@"SELECT 
+      [RegionId] as RegionId
+      ,[CityId] as Id
+      ,[NameUA] as Name
+     FROM Meest_City WHERE regionId = " + model.ShippingNewAddress.NovaPoshtaRegionId + " ORDER BY Name");
+
+            model.ShippingNewAddress.NovaPoshtaCity.Add(new SelectListItem()
+            {
+                Text = "Місто",
+                Value = "0",
+                Selected = model.ShippingNewAddress.NovaPoshtaCityId == 0
+            });
+            foreach (var c in cities)
+            {
+                model.ShippingNewAddress.NovaPoshtaCity.Add(new SelectListItem()
+                {
+                    Text = c.Name,
+                    Value = c.Id.ToString(),
+                    Selected = c.Id == model.ShippingNewAddress.NovaPoshtaCityId
+                });
+            }
+
+            var warehouses = await _dataProvider.QueryAsync<NovaPoshtaStreet>(@"SELECT 
+      [cityId] as CityId
+      ,[Id] as Id
+      ,[Name] as Name
+     FROM Meest_Street WHERE cityId = " + model.ShippingNewAddress.NovaPoshtaCityId + " ORDER BY Name");
+
+            model.ShippingNewAddress.NovaPoshtaStreet.Add(new SelectListItem()
+            {
+                Text = "Вулиця",
+                Value = "0",
+                Selected = model.ShippingNewAddress.NovaPoshtaStreetId == 0
+            });
+            foreach (var c in warehouses)
+            {
+                model.ShippingNewAddress.NovaPoshtaStreet.Add(new SelectListItem()
+                {
+                    Text = c.Name,
+                    Value = c.Id.ToString(),
+                    Selected = c.Id == model.ShippingNewAddress.NovaPoshtaStreetId
+                });
+            }
+        }
+
+        #endregion
+
     }
 }

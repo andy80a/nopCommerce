@@ -315,9 +315,9 @@ namespace Nop.Services.Localization
             {
                 //load all records (we know they are cached)
                 var resources = await GetAllResourceValuesAsync(languageId, !resourceKey.StartsWith(NopLocalizationDefaults.AdminLocaleStringResourcesPrefix, StringComparison.InvariantCultureIgnoreCase));
-                if (resources.ContainsKey(resourceKey))
+                if (resources.TryGetValue(resourceKey, out var value))
                 {
-                    result = resources[resourceKey].Value;
+                    result = value.Value;
                 }
             }
             else
@@ -428,7 +428,7 @@ namespace Nop.Services.Localization
             {
                 if (lsNamesList.ContainsKey(name))
                 {
-                    if (!updateExistingResources) 
+                    if (!updateExistingResources)
                         continue;
 
                     var lsr = lsNamesList[name];

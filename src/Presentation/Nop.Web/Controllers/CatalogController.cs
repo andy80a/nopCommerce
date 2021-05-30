@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Nop.Core;
@@ -95,16 +96,17 @@ namespace Nop.Web.Controllers
 
         public virtual async Task<IActionResult> Category(int categoryId, CatalogProductsCommand command)
         {
+            var sw = Stopwatch.StartNew();
             var category = await _categoryService.GetCategoryByIdAsync(categoryId);
 
             if (!await CheckCategoryAvailabilityAsync(category))
                 return InvokeHttp404();
 
             //'Continue shopping' URL
-            await _genericAttributeService.SaveAttributeAsync(await _workContext.GetCurrentCustomerAsync(),
-                NopCustomerDefaults.LastContinueShoppingPageAttribute,
-                _webHelper.GetThisPageUrl(false),
-                (await _storeContext.GetCurrentStoreAsync()).Id);
+            //await _genericAttributeService.SaveAttributeAsync(await _workContext.GetCurrentCustomerAsync(),
+            //    NopCustomerDefaults.LastContinueShoppingPageAttribute,
+            //    _webHelper.GetThisPageUrl(false),
+            //    (await _storeContext.GetCurrentStoreAsync()).Id);
 
             //display "edit" (manage) link
             if (await _permissionService.AuthorizeAsync(StandardPermissionProvider.AccessAdminPanel) && await _permissionService.AuthorizeAsync(StandardPermissionProvider.ManageCategories))
@@ -114,12 +116,20 @@ namespace Nop.Web.Controllers
             await _customerActivityService.InsertActivityAsync("PublicStore.ViewCategory",
                 string.Format(await _localizationService.GetResourceAsync("ActivityLog.PublicStore.ViewCategory"), category.Name), category);
 
+            Debug.WriteLine($"# {category.Id} Pre " + sw.Elapsed.TotalMilliseconds); sw.Restart();
+
             //model
             var model = await _catalogModelFactory.PrepareCategoryModelAsync(category, command);
 
+            Debug.WriteLine($"# {category.Id} PrepareCategoryModel " + sw.Elapsed.TotalMilliseconds); sw.Restart();
+
             //template
             var templateViewPath = await _catalogModelFactory.PrepareCategoryTemplateViewPathAsync(category.CategoryTemplateId);
-            return View(templateViewPath, model);
+            var view = View(templateViewPath, model);
+            
+            Debug.WriteLine($"# {category.Id} View " + sw.Elapsed.TotalMilliseconds); sw.Restart();
+
+            return view;
         }
 
         //ignore SEO friendly URLs checks
@@ -318,11 +328,7 @@ namespace Nop.Web.Controllers
         [CheckLanguageSeoCode(true)]
         public virtual async Task<IActionResult> SearchTermAutoComplete(string term)
         {
-            if (string.IsNullOrWhiteSpace(term))
-                return Content("");
-
             term = term.Trim();
-
             if (string.IsNullOrWhiteSpace(term) || term.Length < _catalogSettings.ProductSearchTermMinimumLength)
                 return Content("");
 

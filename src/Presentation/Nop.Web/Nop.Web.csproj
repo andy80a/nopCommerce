@@ -19,6 +19,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\..\.NETStandard\MeestExpressApi\MeestExpressApi.csproj" />
+    <ProjectReference Include="..\..\..\..\.NETStandard\NovaPoshtaApi\NovaPoshtaApi.csproj" />
+    <ProjectReference Include="..\..\..\..\.NETStandard\SatApi\SatApi.csproj" />
     <ProjectReference Include="..\..\Libraries\Nop.Core\Nop.Core.csproj" />
     <ProjectReference Include="..\..\Libraries\Nop.Data\Nop.Data.csproj" />
     <ProjectReference Include="..\..\Libraries\Nop.Services\Nop.Services.csproj" />

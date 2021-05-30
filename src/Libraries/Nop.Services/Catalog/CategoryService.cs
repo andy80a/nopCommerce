@@ -208,15 +208,22 @@ namespace Nop.Services.Catalog
         /// </returns>
         public virtual async Task<IList<Category>> GetAllCategoriesAsync(int storeId = 0, bool showHidden = false)
         {
-            var key = _staticCacheManager.PrepareKeyForDefaultCache(NopCatalogDefaults.CategoriesAllCacheKey,
-                storeId,
-                await _customerService.GetCustomerRoleIdsAsync(await _workContext.GetCurrentCustomerAsync()),
-                showHidden);
+            //var key = _staticCacheManager.PrepareKeyForDefaultCache(NopCatalogDefaults.CategoriesAllCacheKey,
+            //    storeId,
+            //    await _customerService.GetCustomerRoleIdsAsync(await _workContext.GetCurrentCustomerAsync()),
+            //    showHidden);
 
-            var categories = await _staticCacheManager
-                .GetAsync(key, async () => (await GetAllCategoriesAsync(string.Empty, storeId, showHidden: showHidden)).ToList());
+            //var categories = await _staticCacheManager
+            //    .GetAsync(key, async () => (await GetAllCategoriesAsync(string.Empty, storeId, showHidden: showHidden)).ToList());
 
-            return categories;
+            //return categories;
+            return (await GetAllCategoriesAsync(string.Empty, storeId, showHidden: showHidden)).ToList();
+        }
+
+        public virtual async Task<IList<Category>> GetAllCategoriesAsync()
+        {
+            var key = new CacheKey(nameof(GetAllCategoriesAsync));
+            return await _staticCacheManager.GetAsync(key, async () => await _categoryRepository.Table.OrderBy(x => x.ParentCategoryId).ThenBy(x => x.DisplayOrder).ThenBy(x => x.Id).ToListAsync());
         }
 
         /// <summary>
@@ -239,33 +246,32 @@ namespace Nop.Services.Catalog
         public virtual async Task<IPagedList<Category>> GetAllCategoriesAsync(string categoryName, int storeId = 0,
             int pageIndex = 0, int pageSize = int.MaxValue, bool showHidden = false, bool? overridePublished = null)
         {
-            var unsortedCategories = await _categoryRepository.GetAllAsync(async query =>
-            {
+            var query = (await GetAllCategoriesAsync()).AsQueryable();
+
                 if (!showHidden)
                     query = query.Where(c => c.Published);
                 else if (overridePublished.HasValue)
                     query = query.Where(c => c.Published == overridePublished.Value);
 
-                //apply store mapping constraints
-                query = await _storeMappingService.ApplyStoreMapping(query, storeId);
+            //apply store mapping constraints
+            query = await _storeMappingService.ApplyStoreMapping(query, storeId);
 
-                //apply ACL constraints
-                if (!showHidden)
-                {
-                    var customer = await _workContext.GetCurrentCustomerAsync();
-                    query = await _aclService.ApplyAcl(query, customer);
-                }
+            //apply ACL constraints
+            if (!showHidden)
+            {
+                var customer = await _workContext.GetCurrentCustomerAsync();
+                query = await _aclService.ApplyAcl(query, customer);
+            }
 
-                if (!string.IsNullOrWhiteSpace(categoryName))
+            if (!string.IsNullOrWhiteSpace(categoryName))
                     query = query.Where(c => c.Name.Contains(categoryName));
 
                 query = query.Where(c => !c.Deleted);
 
-                return query.OrderBy(c => c.ParentCategoryId).ThenBy(c => c.DisplayOrder).ThenBy(c => c.Id);
-            });
+            //var unsortedCategories = query.OrderBy(c => c.ParentCategoryId).ThenBy(c => c.DisplayOrder).ThenBy(c => c.Id);
 
             //sort categories
-            var sortedCategories = await SortCategoriesForTreeAsync(unsortedCategories);
+            var sortedCategories = await SortCategoriesForTreeAsync(query.ToList());
 
             //paging
             return new PagedList<Category>(sortedCategories, pageIndex, pageSize);
@@ -285,9 +291,9 @@ namespace Nop.Services.Catalog
         {
             var store = await _storeContext.GetCurrentStoreAsync();
             var customer = await _workContext.GetCurrentCustomerAsync();
-            var categories = await _categoryRepository.GetAllAsync(async query =>
-            {
-                if (!showHidden)
+            var query = (await GetAllCategoriesAsync()).AsQueryable();
+
+            if (!showHidden)
                 {
                     query = query.Where(c => c.Published);
 
@@ -300,11 +306,7 @@ namespace Nop.Services.Catalog
 
                 query = query.Where(c => !c.Deleted && c.ParentCategoryId == parentCategoryId);
 
-                return query.OrderBy(c => c.DisplayOrder).ThenBy(c => c.Id);
-            }, cache => cache.PrepareKeyForDefaultCache(NopCatalogDefaults.CategoriesByParentCategoryCacheKey,
-                parentCategoryId, showHidden, customer, store));
-
-            return categories;
+                return query.OrderBy(c => c.DisplayOrder).ThenBy(c => c.Id).ToList();
         }
 
         /// <summary>
@@ -317,30 +319,20 @@ namespace Nop.Services.Catalog
         /// </returns>
         public virtual async Task<IList<Category>> GetAllCategoriesDisplayedOnHomepageAsync(bool showHidden = false)
         {
-            var categories = await _categoryRepository.GetAllAsync(query =>
+            var query = (await GetAllCategoriesAsync())
+                .Where(c => c.Published && !c.Deleted && c.ShowOnHomepage);
+
+            if (!showHidden)
             {
-                return from c in query
-                       orderby c.DisplayOrder, c.Id
-                       where c.Published &&
-                             !c.Deleted &&
-                             c.ShowOnHomepage
-                       select c;
-            }, cache => cache.PrepareKeyForDefaultCache(NopCatalogDefaults.CategoriesHomepageCacheKey));
+                query = await query
+                   .WhereAwait(async c => await _aclService.AuthorizeAsync(c) && await _storeMappingService.AuthorizeAsync(c))
+                   .ToListAsync();
+            }
 
-            if (showHidden)
-                return categories;
-
-            var cacheKey = _staticCacheManager.PrepareKeyForDefaultCache(NopCatalogDefaults.CategoriesHomepageWithoutHiddenCacheKey,
-                await _storeContext.GetCurrentStoreAsync(), await _customerService.GetCustomerRoleIdsAsync(await _workContext.GetCurrentCustomerAsync()));
-
-            var result = await _staticCacheManager.GetAsync(cacheKey, async () =>
-            {
-                return await categories
-                    .WhereAwait(async c => await _aclService.AuthorizeAsync(c) && await _storeMappingService.AuthorizeAsync(c))
-                    .ToListAsync();
-            });
-
-            return result;
+            return query
+                .OrderBy(x => x.DisplayOrder)
+                .ThenBy(x => x.Id)
+                .ToList();
         }
 
         /// <summary>
@@ -394,27 +386,15 @@ namespace Nop.Services.Catalog
         /// </returns>
         public virtual async Task<IList<int>> GetChildCategoryIdsAsync(int parentCategoryId, int storeId = 0, bool showHidden = false)
         {
-            var cacheKey = _staticCacheManager.PrepareKeyForDefaultCache(NopCatalogDefaults.CategoriesChildIdsCacheKey,
-                parentCategoryId,
-                await _customerService.GetCustomerRoleIdsAsync(await _workContext.GetCurrentCustomerAsync()),
-                storeId,
-                showHidden);
+            var categoriesIds = new List<int>();
+            var categories = (await GetAllCategoriesAsync(storeId: storeId, showHidden: showHidden))
+                .Where(c => c.ParentCategoryId == parentCategoryId)
+                .Select(c => c.Id)
+                .ToList();
+            categoriesIds.AddRange(categories);
+            categoriesIds.AddRange(await categories.SelectManyAwait(async cId => await GetChildCategoryIdsAsync(cId, storeId, showHidden)).ToListAsync());
 
-            return await _staticCacheManager.GetAsync(cacheKey, async () =>
-            {
-                //little hack for performance optimization
-                //there's no need to invoke "GetAllCategoriesByParentCategoryId" multiple times (extra SQL commands) to load childs
-                //so we load all categories at once (we know they are cached) and process them server-side
-                var categoriesIds = new List<int>();
-                var categories = (await GetAllCategoriesAsync(storeId: storeId, showHidden: showHidden))
-                    .Where(c => c.ParentCategoryId == parentCategoryId)
-                    .Select(c => c.Id)
-                    .ToList();
-                categoriesIds.AddRange(categories);
-                categoriesIds.AddRange(await categories.SelectManyAwait(async cId => await GetChildCategoryIdsAsync(cId, storeId, showHidden)).ToListAsync());
-
-                return categoriesIds;
-            });
+            return categoriesIds;
         }
 
         /// <summary>

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using LinqToDB;
 using Microsoft.AspNetCore.Http;
 using Nop.Core;
+using Nop.Core.Caching;
 using Nop.Core.Domain.Catalog;
 using Nop.Core.Domain.Media;
 using Nop.Core.Infrastructure;
@@ -36,6 +37,7 @@ namespace Nop.Services.Media
         private readonly IUrlRecordService _urlRecordService;
         private readonly IWebHelper _webHelper;
         private readonly MediaSettings _mediaSettings;
+        private readonly IStaticCacheManager _staticCacheManager;
 
         #endregion
 
@@ -52,7 +54,8 @@ namespace Nop.Services.Media
             ISettingService settingService,
             IUrlRecordService urlRecordService,
             IWebHelper webHelper,
-            MediaSettings mediaSettings)
+            MediaSettings mediaSettings,
+            IStaticCacheManager staticCacheManager)
         {
             _dataProvider = dataProvider;
             _downloadService = downloadService;
@@ -66,6 +69,7 @@ namespace Nop.Services.Media
             _urlRecordService = urlRecordService;
             _webHelper = webHelper;
             _mediaSettings = mediaSettings;
+            _staticCacheManager = staticCacheManager;
         }
 
         #endregion
@@ -694,7 +698,8 @@ namespace Nop.Services.Media
         /// </returns>
         public virtual async Task<Picture> GetPictureByIdAsync(int pictureId)
         {
-            return await _pictureRepository.GetByIdAsync(pictureId, cache => default);
+            GetAllPictures().TryGetValue(pictureId, out var picture);
+            return picture;
         }
 
         /// <summary>
@@ -730,14 +735,16 @@ namespace Nop.Services.Media
         /// </returns>
         public virtual async Task<IPagedList<Picture>> GetPicturesAsync(string virtualPath = "", int pageIndex = 0, int pageSize = int.MaxValue)
         {
-            var query = _pictureRepository.Table;
+            var pictures = GetAllPictures().Values.AsEnumerable();
 
             if (!string.IsNullOrEmpty(virtualPath))
-                query = virtualPath.EndsWith('/') ? query.Where(p => p.VirtualPath.StartsWith(virtualPath) || p.VirtualPath == virtualPath.TrimEnd('/')) : query.Where(p => p.VirtualPath == virtualPath);
+                pictures = virtualPath.EndsWith('/') ?
+                 pictures.Where(p => p.VirtualPath.StartsWith(virtualPath) || p.VirtualPath == virtualPath.TrimEnd('/')) :
+                 pictures.Where(p => p.VirtualPath == virtualPath);
 
-            query = query.OrderByDescending(p => p.Id);
+            pictures = pictures.OrderByDescending(p => p.Id);
 
-            return await query.ToPagedListAsync(pageIndex, pageSize);
+            return new PagedList<Picture>(pictures.ToList(),pageIndex, pageSize);
         }
 
         /// <summary>
@@ -754,18 +761,38 @@ namespace Nop.Services.Media
             if (productId == 0)
                 return new List<Picture>();
 
-            var query = from p in _pictureRepository.Table
-                        join pp in _productPictureRepository.Table on p.Id equals pp.PictureId
-                        orderby pp.DisplayOrder, pp.Id
-                        where pp.ProductId == productId
-                        select p;
+            GetAllPicturesByProduct().TryGetValue(productId, out var pictures);
+            pictures ??= Array.Empty<Picture>();
 
             if (recordsToReturn > 0)
-                query = query.Take(recordsToReturn);
+                pictures = pictures.Take(recordsToReturn).ToArray();
 
-            var pics = await query.ToListAsync();
+            return pictures;
+        }
 
-            return pics;
+        public virtual IDictionary<int, Picture[]> GetAllPicturesByProduct()
+        {
+            return _staticCacheManager.Get(new CacheKey(nameof(GetAllPicturesByProduct)), () =>
+            {
+                var query = from p in _pictureRepository.Table
+                            join pp in _productPictureRepository.Table on p.Id equals pp.PictureId
+                            orderby pp.DisplayOrder, pp.Id
+                            select new { Picture = p, pp.ProductId };
+
+                return query.ToArray()
+                    .GroupBy(x => x.ProductId)
+                    .ToDictionary(k => k.Key, v => v.Select(x => x.Picture).ToArray());
+            });
+        }
+
+        private Dictionary<int, Picture> GetAllPictures()
+        {
+            return _staticCacheManager.Get(new CacheKey(nameof(GetAllPictures)), () =>
+            {
+                var picures = _pictureRepository.Table
+                    .ToDictionary(x => x.Id);
+                return picures;
+            });
         }
 
         /// <summary>
@@ -807,6 +834,8 @@ namespace Nop.Services.Media
 
             if (!await IsStoreInDbAsync())
                 await SavePictureInFileAsync(picture.Id, pictureBinary, mimeType);
+
+            await _staticCacheManager.RemoveAsync(new CacheKey(nameof(GetAllPictures)));
 
             return picture;
         }
