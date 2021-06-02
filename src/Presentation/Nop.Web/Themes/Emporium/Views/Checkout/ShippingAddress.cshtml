@@ -87,18 +87,18 @@
                                                 @item.Address2
                                             </li>
                                         }
-                                        @if (item.CityEnabled && !string.IsNullOrEmpty(item.City) ||
-                                           item.CountyEnabled && !string.IsNullOrEmpty(item.County) ||
-                                           item.StateProvinceEnabled && !string.IsNullOrEmpty(item.StateProvinceName) ||
-                                           item.ZipPostalCodeEnabled && !string.IsNullOrEmpty(item.ZipPostalCode))
+                                        @if (item.CityEnabled && !string.IsNullOrEmpty(item.City)|| 
+                                            item.CountyEnabled && !string.IsNullOrEmpty(item.County) || 
+                                            item.StateProvinceEnabled && !string.IsNullOrEmpty(item.StateProvinceName) || 
+                                            item.ZipPostalCodeEnabled && !string.IsNullOrEmpty(item.ZipPostalCode))
                                         {
                                             <li class="city-state-zip">
                                                 @if (item.CityEnabled && !string.IsNullOrEmpty(item.City))
                                                 {
                                                     @item.City
-                                                    @if (item.CountyEnabled && !string.IsNullOrEmpty(item.County) ||
-                                                       item.StateProvinceEnabled && !string.IsNullOrEmpty(item.StateProvinceName) ||
-                                                       item.ZipPostalCodeEnabled && !string.IsNullOrEmpty(item.ZipPostalCode))
+                                                    @if (item.CountyEnabled && !string.IsNullOrEmpty(item.County) || 
+                                                        item.StateProvinceEnabled && !string.IsNullOrEmpty(item.StateProvinceName) || 
+                                                        item.ZipPostalCodeEnabled && !string.IsNullOrEmpty(item.ZipPostalCode))
                                                     {
                                                         <text>,</text>
                                                     }
@@ -106,8 +106,8 @@
                                                 @if (item.CountyEnabled && !string.IsNullOrEmpty(item.County))
                                                 {
                                                     @item.County
-                                                    @if (item.StateProvinceEnabled && !string.IsNullOrEmpty(item.StateProvinceName) ||
-                                                       item.ZipPostalCodeEnabled && !string.IsNullOrEmpty(item.ZipPostalCode))
+                                                    @if (item.StateProvinceEnabled && !string.IsNullOrEmpty(item.StateProvinceName) || 
+                                                        item.ZipPostalCodeEnabled && !string.IsNullOrEmpty(item.ZipPostalCode))
                                                     {
                                                         <text>,</text>
                                                     }
@@ -154,41 +154,7 @@
                                     @{
                                         var dataDictAddress = new ViewDataDictionary(ViewData);
                                         dataDictAddress.TemplateInfo.HtmlFieldPrefix = "ShippingNewAddress";
-                                        //@await Html.PartialAsync("_CreateOrUpdateAddress", Model.ShippingNewAddress, dataDictAddress)
-
-
-
-
-                                        if (Model.Type == Nop.Web.Models.Checkout.CheckoutBillingAddressModel.AddressType.NovaPoshtaWarehouse)
-                                        {
-                                            @Html.Partial("_CreateOrUpdateAddressNovaPoshtaWarehouse", Model.ShippingNewAddress, dataDictAddress)
-                                        }
-                                        else if (Model.Type == Nop.Web.Models.Checkout.CheckoutBillingAddressModel.AddressType.NovaPoshtaAddress)
-                                        {
-                                            @Html.Partial("_CreateOrUpdateAddressNovaPoshtaAddress", Model.ShippingNewAddress, dataDictAddress)
-                                        }
-                                        else if (Model.Type == Nop.Web.Models.Checkout.CheckoutBillingAddressModel.AddressType.SATWarehouse)
-                                        {
-                                            @Html.Partial("_CreateOrUpdateAddressSATWarehouse", Model.ShippingNewAddress, dataDictAddress)
-                                        }
-                                        else if (Model.Type == Nop.Web.Models.Checkout.CheckoutBillingAddressModel.AddressType.SATAddress)
-                                        {
-                                            @Html.Partial("_CreateOrUpdateAddressSatAddress", Model.ShippingNewAddress, dataDictAddress)
-                                        }
-                                        else if (Model.Type == Nop.Web.Models.Checkout.CheckoutBillingAddressModel.AddressType.MeestWarehouse)
-                                        {
-                                            @Html.Partial("_CreateOrUpdateAddressMeestWarehouse", Model.ShippingNewAddress, dataDictAddress)
-                                        }
-                                        else if (Model.Type == Nop.Web.Models.Checkout.CheckoutBillingAddressModel.AddressType.MeestAddress)
-                                        {
-                                            @Html.Partial("_CreateOrUpdateAddressMeestAddress", Model.ShippingNewAddress, dataDictAddress)
-                                        }
-                                        else
-                                        {
-                                            @Html.Partial("_CreateOrUpdateAddress", Model.ShippingNewAddress, dataDictAddress)
-                                        }
-
-
+                                        @await Html.PartialAsync("_CreateOrUpdateAddress", Model.ShippingNewAddress, dataDictAddress)
                                     }
                                     <div class="buttons">
                                         <input type="submit" name="nextstep" value="@T("Checkout.NextButton")" class="button-1 new-address-next-step-button" />
@@ -199,31 +165,31 @@
                     </div>
                     @await Component.InvokeAsync("Widget", new { widgetZone = PublicWidgetZones.CheckoutShippingAddressMiddle })
                     @*<div class="section new-shipping-address">
-                            <div class="title">
-                                @if (Model.ExistingAddresses.Count > 0)
-                                {
-                                    <strong>@T("Checkout.OrEnterNewAddress")</strong>
-                                }
-                                else
-                                {
-                                    <strong>@T("Checkout.EnterShippingAddress")</strong>
-                                }
-                            </div>
-                            <div class="enter-address">
-                                <div asp-validation-summary="ModelOnly" class="message-error"></div>
-                                @{
-                                    var dataDictAddress = new ViewDataDictionary(ViewData);
-                                    dataDictAddress.TemplateInfo.HtmlFieldPrefix = "ShippingNewAddress";
-                                    @await Html.PartialAsync("_CreateOrUpdateAddress", Model.ShippingNewAddress, dataDictAddress)
-                                }
-                            </div>
-                        </div>*@
+                        <div class="title">
+                            @if (Model.ExistingAddresses.Count > 0)
+                            {
+                                <strong>@T("Checkout.OrEnterNewAddress")</strong>
+                            }
+                            else
+                            {
+                                <strong>@T("Checkout.EnterShippingAddress")</strong>
+                            }
+                        </div>
+                        <div class="enter-address">
+                            <div asp-validation-summary="ModelOnly" class="message-error"></div>
+                            @{
+                                var dataDictAddress = new ViewDataDictionary(ViewData);
+                                dataDictAddress.TemplateInfo.HtmlFieldPrefix = "ShippingNewAddress";
+                                @await Html.PartialAsync("_CreateOrUpdateAddress", Model.ShippingNewAddress, dataDictAddress)
+                            }
+                        </div>
+                    </div>*@
                     @await Component.InvokeAsync("Widget", new { widgetZone = PublicWidgetZones.CheckoutShippingAddressBottom })
                 </div>
             }
             @*<div class="buttons">
-                    <button type="submit" name="nextstep" class="button-1 new-address-next-step-button">@T("Checkout.NextButton")</button>
-                </div>*@
+                <button type="submit" name="nextstep" class="button-1 new-address-next-step-button">@T("Checkout.NextButton")</button>
+            </div>*@
         </form>
         <div class="section order-summary">
             <div class="title">

@@ -1,16 +1,14 @@
 ﻿
-
 @media all and (min-width: 1025px) {
 
 /* GLOBAL STYLES */
-
 
 .mobile {
 	display: none !important;
 }
 
 .admin-header-links {
-
+	float: left;
 	font-size: 12px;
     background: none;
 	color: #bbb;
@@ -343,7 +341,7 @@
 
 .header-logo {
 	float: left;
-    width: 20%;
+    width: 25%;
     text-align: left;
     padding-right: 10px;
 }
@@ -448,7 +446,7 @@
 
 .header-lower .search-box {
     float: left;
-	width: 35%;
+	width: 40%;
 }
 
 .search-box .search-box-button {
@@ -1698,15 +1696,6 @@ td.remove-from-cart label, td.add-to-cart label {
 .topic-post .post-body {
 	width: 70%;
 	max-width: 1000px; 
-}
-
-
-
-.totals,
-.cart-options,
-.cart-collaterals > div{
-    float: none;
-    width: 60%;
 }
 
 

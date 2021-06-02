@@ -100,7 +100,7 @@
     <Value>[{"breakpoint":1600,"settings":{"slidesToShow":8}},{"breakpoint":1280,"settings":{"slidesToShow":6, "dots": true}},{"breakpoint":1024,"settings":{"slidesToShow":4, "dots": true}},{"breakpoint":600,"settings":{"slidesToShow":2, "dots": true}}]</Value>
   </Setting>
   <Setting Name="nopajaxfilterssettings.productpagesizedropdownselector">
-    <Value>#products-pagesize-mobile, #products-pagesize-desktop</Value>
+    <Value>#products-pagesize</Value>
   </Setting>
   <Setting Name="nopajaxfilterssettings.shownumberofreturnedproductsselector">
     <Value>.returned-products-marker</Value>

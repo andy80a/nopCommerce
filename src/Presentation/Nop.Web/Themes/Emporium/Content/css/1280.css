@@ -510,23 +510,4 @@
 	margin-left: 20%;
 }
 
-
-
-
-
-
-
-
-
-.totals,
-.cart-options,
-.cart-collaterals > div{
-    float: none;
-    width: 60% !important;
-}
-.shopping-cart-page .table-wrapper{
-    width: 100%
-}
- 
-
 }

@@ -980,7 +980,7 @@
 }
 
 .item-box:nth-child(4n+1) {
-	margin-left: 0;
+	margin-right: 0;
 	clear: both;
 }
 

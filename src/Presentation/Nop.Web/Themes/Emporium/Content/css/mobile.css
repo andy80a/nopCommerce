@@ -638,31 +638,3 @@
 
 
 
-
-
-
-
-
-
-
- .language-selector-options > div input[type="radio"] {
-        display: none !important;
-    }
-
-    .language-selector-options > div label {
-        display: block;
-        padding: 10px 38px;
-        line-height: 18px;
-        font-size: 14px;
-        font-weight: 400;
-    }
-
-    .header-contacts-toggle {
-        display: none;
-    }
-    .header-contacts {
-        display: none;
-    }
-    .responsive-nav-wrapper .menu-contacts{
-	float:left
-}
