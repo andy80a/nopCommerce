@@ -381,7 +381,7 @@ namespace Nop.Web.Controllers
                 return;
             }
 
-            var client = new SatApi.SatApi(SatDelivaryApiKey);
+            var client = new SatApi.SatAPI(SatDelivaryApiKey);
 
             var cityRef =  (await _dataProvider.QueryAsync<string>(@"SELECT Ref FROM Sat_City WHERE [cityId] = @CityId", new DataParameter("CityId", model.CityId))).First();
             var city = client.GetCity(cityRef);
