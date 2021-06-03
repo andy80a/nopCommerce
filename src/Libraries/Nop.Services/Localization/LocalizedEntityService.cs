@@ -129,6 +129,8 @@ namespace Nop.Services.Localization
 
                 using var currentConnection = provider.GetDbConnection();
                 {
+                    currentConnection.Open();
+
                     //command to execute
                     using (var cmd = currentConnection.CreateCommand())
                     {
