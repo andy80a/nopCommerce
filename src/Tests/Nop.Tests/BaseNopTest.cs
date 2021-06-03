@@ -550,17 +550,17 @@ namespace Nop.Tests
 
         protected class TestPictureService : PictureService
         {
-            public TestPictureService(INopDataProvider dataProvider, IDownloadService downloadService,
-                IHttpContextAccessor httpContextAccessor, INopFileProvider fileProvider,
-                IProductAttributeParser productAttributeParser, IRepository<Picture> pictureRepository,
-                IRepository<PictureBinary> pictureBinaryRepository,
-                IRepository<ProductPicture> productPictureRepository, ISettingService settingService,
-                IUrlRecordService urlRecordService, IWebHelper webHelper, MediaSettings mediaSettings) : base(
-                dataProvider, downloadService, httpContextAccessor, fileProvider, productAttributeParser,
-                pictureRepository, pictureBinaryRepository, productPictureRepository, settingService, urlRecordService,
-                webHelper, mediaSettings)
-            {
-            }
+            //public TestPictureService(INopDataProvider dataProvider, IDownloadService downloadService,
+            //    IHttpContextAccessor httpContextAccessor, INopFileProvider fileProvider,
+            //    IProductAttributeParser productAttributeParser, IRepository<Picture> pictureRepository,
+            //    IRepository<PictureBinary> pictureBinaryRepository,
+            //    IRepository<ProductPicture> productPictureRepository, ISettingService settingService,
+            //    IUrlRecordService urlRecordService, IWebHelper webHelper, MediaSettings mediaSettings) : base(
+            //    dataProvider, downloadService, httpContextAccessor, fileProvider, productAttributeParser,
+            //    pictureRepository, pictureBinaryRepository, productPictureRepository, settingService, urlRecordService,
+            //    webHelper, mediaSettings)
+            //{
+            //}
 
             // Travis doesn't support named semaphore, that's why we use implementation without it 
             public override async Task<(string Url, Picture Picture)> GetPictureUrlAsync(Picture picture,

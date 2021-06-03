@@ -84,10 +84,10 @@ namespace Nop.Services.Localization
         {
             if (_allLanguages == null)
             {
-                _allLanguages = _languageRepository.Table
+                _allLanguages = await _languageRepository.Table
                     .OrderBy(l => l.DisplayOrder)
                     .ThenBy(l => l.Id)
-                    .ToList();
+                    .ToListAsync();
             }
 
             return _allLanguages;

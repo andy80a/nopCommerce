@@ -1,0 +1,158 @@
+﻿@{
+    Layout = "";
+}
+@model Nop.Plugin.SMS.Notification.Models.SmsNotificationModel
+@using Nop.Web.Framework;
+@using (Html.BeginForm())
+{
+    @Html.AntiForgeryToken()
+    <table class="adminContent">
+        <tr>
+            <td class="adminTitle">
+                @Html.NopLabelFor(model => model.Enabled):
+            </td>
+            <td class="adminData">
+                @Html.EditorFor(model => model.Enabled)
+                @Html.ValidationMessageFor(model => model.Enabled)
+            </td>
+        </tr>
+        <tr>
+            <td class="adminTitle">
+                @Html.NopLabelFor(model => model.UserName):
+            </td>
+            <td class="adminData">
+                @Html.EditorFor(model => model.UserName)
+                @Html.ValidationMessageFor(model => model.UserName)
+            </td>
+        </tr>
+        <tr>
+            <td class="adminTitle">
+                @Html.NopLabelFor(model => model.Password):
+            </td>
+            <td class="adminData">
+                @Html.EditorFor(model => model.Password)
+                @Html.ValidationMessageFor(model => model.Password)
+            </td>
+        </tr>
+        <tr>
+            <td class="adminTitle">
+                @Html.NopLabelFor(model => model.Balance):
+            </td>
+            <td class="adminData">
+                @Html.DisplayFor(model => model.Balance)
+            </td>
+        </tr>
+        <tr>
+            <td class="adminTitle">
+                @Html.NopLabelFor(model => model.Sender):
+            </td>
+            <td class="adminData">
+                @Html.EditorFor(model => model.Sender)
+                @Html.ValidationMessageFor(model => model.Sender)
+            </td>
+        </tr>
+        <tr>
+            <td class="adminTitle">
+                @Html.NopLabelFor(model => model.MsgNewUser):
+            </td>
+            <td class="adminData">
+                @Html.EditorFor(model => model.MsgNewUser)
+                @Html.ValidationMessageFor(model => model.MsgNewUser)
+                <br>
+                <small>
+                    {login}, {systemName}, {email}
+                </small>
+            </td>
+        </tr>
+        <tr>
+            <td class="adminTitle">
+                @Html.NopLabelFor(model => model.MsgNewOrder):
+            </td>
+            <td class="adminData">
+                @Html.EditorFor(model => model.MsgNewOrder)
+                @Html.ValidationMessageFor(model => model.MsgNewOrder)
+                <br>
+                <small>
+                    {orderId}, {orderItems}, {orderPrice}, {login}, {systemName}, {email}
+                </small>
+            </td>
+        </tr>
+        <tr>
+            <td class="adminTitle">
+                @Html.NopLabelFor(model => model.MsgCancelledOrder):
+            </td>
+            <td class="adminData">
+                @Html.EditorFor(model => model.MsgCancelledOrder)
+                @Html.ValidationMessageFor(model => model.MsgCancelledOrder)
+                <br>
+                <small>
+                    {orderId}, {orderItems}, {orderPrice}, {login}, {systemName}, {email}
+                </small>
+            </td>
+        </tr>
+        <tr>
+            <td class="adminTitle">
+                @Html.NopLabelFor(model => model.MsgShipment):
+            </td>
+            <td class="adminData">
+                @Html.EditorFor(model => model.MsgShipment)
+                @Html.ValidationMessageFor(model => model.MsgShipment)
+                <br>
+                <small>
+                    {trackingNumber}, {orderId}, {orderItems}, {orderPrice}, {login}, {systemName}, {email}
+                </small>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2" width="100%">
+                <input type="submit" name="save" class="t-button" value="@T("Admin.Common.Save")" />
+            </td>
+        </tr>
+        <tr class="adminSeparator">
+            <td colspan="2">
+                <hr />
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2">
+                <p>
+                    <strong>Відправити тестове повідомлення</strong>
+                </p>
+            </td>
+        </tr>
+    <tr>
+        <td class="adminTitle">
+            @Html.NopLabelFor(model => model.TestReceiver):
+        </td>
+        <td class="adminData">
+            @Html.EditorFor(model => model.TestReceiver)
+            @Html.ValidationMessageFor(model => model.TestReceiver)
+        </td>
+    </tr>
+        <tr>
+            <td class="adminTitle">
+                @Html.NopLabelFor(model => model.Message):
+            </td>
+            <td class="adminData">
+                @Html.EditorFor(model => model.Message)
+                @Html.ValidationMessageFor(model => model.Message)
+            </td>
+        </tr>
+        @if (!String.IsNullOrEmpty(Model.TestSmsResult))
+        {
+            <tr>
+                <td></td>
+                <td style="color: red">
+                    @Model.TestSmsResult
+                </td>
+            </tr>
+        }
+        <tr>
+            <td colspan="2" width="100%">
+                <input type="submit" name="test-sms" class="t-button" value="Відправити" />
+            </td>
+        </tr>
+    </table>
+    
+    
+}

@@ -1,0 +1,8 @@
+﻿Group: SMS providers
+FriendlyName: SMS Notification
+SystemName: SMS.Notification
+Version: 1.0
+SupportedVersions: 3.90
+Author: Vasyl Senko
+DisplayOrder: 1
+FileName: Nop.Plugin.SMS.Notification.dll
