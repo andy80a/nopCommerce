@@ -1,12 +1,18 @@
 ﻿{
   "Group": "7Spikes",
   "FriendlyName": "Nop Emporium Theme",
-  "SystemName": "SevenSpikes.Theme.Emporium",
-  "Version": "4.4",
-  "SupportedVersions": [ "4.40" ],
-  "DependsOnSystemNames": [ "SevenSpikes.Core" ],
+  "SupportedVersions": [
+    "4.40"
+  ],
   "Author": "Seven Spikes Ltd",
   "DisplayOrder": 2,
   "FileName": "SevenSpikes.Theme.Emporium.dll",
-  "Description": "This plugin allows you to configure the Emporium theme settings"
+  "Description": "This plugin allows you to configure the Emporium theme settings",
+  "LimitedToStores": [],
+  "LimitedToCustomerRoles": [],
+  "DependsOnSystemNames": [
+    "SevenSpikes.Core"
+  ],
+  "SystemName": "SevenSpikes.Theme.Emporium",
+  "Version": "4.4"
 }
