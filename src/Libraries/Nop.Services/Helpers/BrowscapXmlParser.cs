@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -16,6 +17,8 @@ namespace Nop.Services.Helpers
     {
         private readonly INopFileProvider _fileProvider;
         private Regex _crawlerUserAgentsRegexp;
+
+        private readonly ConcurrentDictionary<string, bool> _crawlers = new ConcurrentDictionary<string, bool>();
 
         /// <summary>
         /// Ctor
@@ -107,7 +110,7 @@ namespace Nop.Services.Helpers
         /// <returns>True if user agent is a crawler, otherwise - false</returns>
         public bool IsCrawler(string userAgent)
         {
-            return _crawlerUserAgentsRegexp.IsMatch(userAgent);
+            return _crawlers.GetOrAdd(userAgent, _crawlerUserAgentsRegexp.IsMatch);
         }
     }
 }

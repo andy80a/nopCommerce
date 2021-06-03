@@ -3199,9 +3199,7 @@ input + .inputs-icons {
 	width: 49%;
 	float: left;
 	margin: 0 0 2% 2%;
-	border: 1px solid #eeeeee;
 	background-color: #fff;
-	border-radius: 3px;
 	overflow: hidden;
 }
 
@@ -3686,8 +3684,6 @@ input + .inputs-icons {
 	position: relative;
 	width: 85px;
 	margin: 0 4px 10px;
-	border-radius: 3px;
-	border: 1px solid #eeeeee;
 	overflow: hidden;
 	background-color: #fff;
 	cursor: pointer;
@@ -4884,13 +4880,6 @@ td.add-to-cart label,
 	font-size: 17px;
 	color: #8c8c8c;
 	font-weight: 300;
-}
-
-.attributes-wrapper {
-	margin-bottom: 30px;
-	border: 1px solid #eeeeee;
-	border-radius: 3px;
-	padding: 10px;
 }
 
 .product-variant-line .attributes-wrapper {
@@ -9630,3 +9619,72 @@ td.latest-post {
 	border-radius: 3px;
 }
 
+
+
+
+.header-contacts-toggle {
+    display: block;
+    width: 10%;
+    padding-right: 10px;
+    float: left;
+    font-size: 14px
+}
+
+.contacts-toggle span {
+    background-image: url('/icons/logo-phone-small.jpg');
+    background-position: center center;
+    background-repeat: no-repeat;
+    display: inline-block;
+    height: 47px;
+    width: 47px;
+    cursor: pointer
+}
+
+.menu-contacts span {
+    height: 40px;
+    width: 40px;
+}
+
+.header-contacts-line {
+    display: none;
+    text-align: center;
+    font-size: 14px;
+    color: #8c8c8c;
+    border-bottom: 3px solid #eee;
+    padding: 10px;
+}
+
+    .header-contacts-line a {
+        display: inline-block;
+        margin: 2px 5px
+    }
+
+    .header-contacts-line img {
+        width: 15px;
+        vertical-align: sub
+    }
+
+.header-contacts {
+    display: none;
+    float: left;
+    font-size: 14px;
+    color: #8c8c8c;
+}
+
+    .header-contacts a {
+        margin: 3px 5px;
+        display: inline-block
+    }
+
+    .header-contacts img {
+        width: 15px;
+        vertical-align: sub
+    }
+
+.totals > div,
+.cart-options .checkout-attributes dl{
+    max-width:600px
+}
+.checkout-attributes textarea {
+    width: 100%
+}

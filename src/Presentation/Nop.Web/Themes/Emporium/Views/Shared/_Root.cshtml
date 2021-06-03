@@ -34,6 +34,9 @@
             <div class="search-wrap">
                 <span>@T("Search")</span>
             </div>
+            <div class="menu-contacts contacts-toggle">
+                <span></span>
+            </div>
             <div class="mobile-logo">
                 @await Component.InvokeAsync("Logo")
             </div>
@@ -45,11 +48,40 @@
         </div>
     </div>
     @await Html.PartialAsync("_Header")
+
+
+<div class="header-contacts-line">
+    <a href="tel:+380961481200">
+        <img src="/icons/logo-ks.png" />
+        +38(096)148-12-00
+    </a>
+    <a href="tel:+380503756360">
+        <img src="/icons/logo-mts.png" />
+        +38(050)375-63-60
+    </a>
+    <a href="tel:+380630195490">
+        <img src="/icons/logo-life.png" />
+        +38(063)019-54-90
+    </a>
+    <a href="tel:+380442477289">
+        <img src="/icons/logo-phone.jpg" />
+        +38(044)247-72-89
+    </a>
+</div>
+
+
     <script type="text/javascript" asp-location="Footer">
         var localized_data = {
             AjaxCartFailure: "@T("AjaxCart.Failure")"
         };
         AjaxCart.init(false, '.cart-qty', '.header-links .wishlist-qty', '#flyout-cart', localized_data);
+
+            $(".contacts-toggle").click(function () {
+                if ($('.header-contacts-line').css('display') == 'none')
+                    $('.header-contacts-line').css('display', 'block');
+                else
+                    $('.header-contacts-line').css('display', 'none');
+            })
     </script>
     <div class="overlayOffCanvas"></div>
     @if (isHomePage)

@@ -813,6 +813,9 @@
 	margin-left: 24%;
 }
 
-
+.cart-collaterals > div{
+    float: none;
+    width: 100%;
+}
 
 }
