@@ -63,7 +63,8 @@
     @if (Model.DisplayContactUsMenuItem)
     {
         <li><a href="@Url.RouteUrl("ContactUs")">@T("ContactUs")</a></li>
-    }
+    }	   
+<li>@await Component.InvokeAsync("LanguageSelector")</li>
     @await Component.InvokeAsync("Widget", new { widgetZone = PublicWidgetZones.HeaderMenuAfter })
 </ul>
 

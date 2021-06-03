@@ -4,15 +4,15 @@
 /*HEADER*/
 
 .header-lower .search-box {
-	width: 50%;
+		width: 40%;
 }
 
 .header-links-wrapper {
-    width: 30%;
+        width: 25%;
 }
 
 .header-logo {
-    width: 20%;
+        width: 15%;
 }
 
 /* CATEGORY PAGE */
@@ -184,5 +184,23 @@
 .address-grid > div:nth-child(3) {
 	margin-top: 0;
 }
+
+	/* TABLES */
+
+
+
+
+
+
+	.header-contacts {
+		display: block;
+		width: 20%;
+		padding-right: 10px;
+	}
+
+	.header-contacts-toggle {
+		display: none;
+	}
+
 
 }

@@ -148,15 +148,6 @@
                     }
                 ]
             },
-            attachDetach: {
-                blocks: [
-                    {
-                        elementToAttach: '.header-selectors-wrapper',
-                        content: '.admin-header-links',
-                        insertAction: 'prependTo'
-                    }
-                ]
-            },
             responsive: [
                 {
                     breakpoint: 1281,
