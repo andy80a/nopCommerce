@@ -1,10 +1,50 @@
-using System.Linq;
+﻿using System.Linq;
+using System.Threading.Tasks;
+using Nop.Core;
 using Nop.Core.Domain.Catalog;
+using Nop.Core.Infrastructure;
 
 namespace Nop.Services.Catalog
 {
     public static class ProductExtensions
     {
+        public static async Task<int> GetLvivStockQuantityAsync(this Product product)
+        {
+            IProductService _productService = EngineContext.Current.Resolve<IProductService>();
+            return await _productService.GetLvivStockQuantityAsync(product);
+        }
+
+
+        public static async Task<string> GetLvivStockQuantityForDisplayAsync(this Product product, IWorkContext workContext)
+        {
+            var realQ = await product.GetLvivStockQuantityAsync();
+
+            if (product.Price < 200)
+            {
+                if (realQ < 10)
+                {
+                    return realQ + " шт.";
+                }
+            }
+
+            if (product.Price < 1000)
+            {
+                if (realQ < 5)
+                {
+                    return realQ + " шт.";
+                }
+            }
+            if (realQ < 3)
+            {
+                return realQ + " шт.";
+            }
+            if ( (await workContext.GetWorkingLanguageAsync()).Id == 4)
+            {
+                return "В наявності";
+            }
+            return "В наличии";
+        }
+
         /// <summary>
         /// Sorts the elements of a sequence in order according to a product sorting rule
         /// </summary>

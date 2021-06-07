@@ -4,7 +4,9 @@ using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using LinqToDB.Data;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.Data.SqlClient;
 using Nop.Core;
 using Nop.Core.Caching;
 using Nop.Core.Domain.Catalog;
@@ -15,6 +17,8 @@ using Nop.Core.Domain.Security;
 using Nop.Core.Domain.Seo;
 using Nop.Core.Domain.Shipping;
 using Nop.Core.Domain.Vendors;
+using Nop.Core.Infrastructure;
+using Nop.Data;
 using Nop.Services.Catalog;
 using Nop.Services.Common;
 using Nop.Services.Customers;
@@ -76,6 +80,7 @@ namespace Nop.Web.Factories
         private readonly OrderSettings _orderSettings;
         private readonly SeoSettings _seoSettings;
         private readonly ShippingSettings _shippingSettings;
+        private readonly INopDataProvider _dataProvider;
         private readonly VendorSettings _vendorSettings;        
 
         #endregion
@@ -117,6 +122,7 @@ namespace Nop.Web.Factories
             OrderSettings orderSettings,
             SeoSettings seoSettings,
             ShippingSettings shippingSettings,
+            INopDataProvider dataProvider,
             VendorSettings vendorSettings)
         {
             _captchaSettings = captchaSettings;
@@ -154,6 +160,7 @@ namespace Nop.Web.Factories
             _orderSettings = orderSettings;
             _seoSettings = seoSettings;
             _shippingSettings = shippingSettings;
+            _dataProvider = dataProvider;
             _vendorSettings = vendorSettings;
             
         }
@@ -1350,9 +1357,49 @@ namespace Nop.Web.Factories
                 HasSampleDownload = product.IsDownload && product.HasSampleDownload,
                 DisplayDiscontinuedMessage = !product.Published && _catalogSettings.DisplayDiscontinuedMessageForUnpublishedProducts,
                 AvailableEndDate = product.AvailableEndDateTimeUtc,
+                KrakowAvailability = product.AvailabilityInKrakow + product.AvailabilityInKatowice + product.AvailabilityInJanki + product.AvailabilityInTargowek + product.AvailabilityInLublin,
+                ForecastInPoland = product.ForecastInPoland,
+
                 VisibleIndividually = product.VisibleIndividually,
                 AllowAddingOnlyExistingAttributeCombinations = product.AllowAddingOnlyExistingAttributeCombinations
             };
+
+            if ((await _workContext.GetWorkingLanguageAsync()).Id == 4)
+            {
+                model.MetaTitle = ": " + model.Name + ", " + model.ShortDescription + ", " +
+                                  "в Києві, Харкові, Дніпропетровську, Одесі, Запоріжжі, Львові.";
+                model.MetaKeywords = "IKEA,IKEA,ІКЕЯ, " + model.Sku + ", " + model.Sku.Replace(".", "");
+                model.MetaDescription = "ІКЕА,IKEA,ІКЕЯ," + model.ShortDescription + ',' + model.Sku + ", " + model.Sku.Replace(".", "");
+            }
+
+            var lvivAvailability = await product.GetLvivStockQuantityAsync();
+
+            if ( await _permissionService.AuthorizeAsync(StandardPermissionProvider.ManageOrders))
+            {
+                model.LvivAvailability = lvivAvailability + " шт." + " / " + product.AvailabilityInLvivExpectation;
+               
+
+                var code = (await _dataProvider.QueryAsync<string>(@"SELECT TOP 1 
+[CodePL]
+FROM [CustomsProduct]
+WHERE [ArticleNumber] = @n
+", new DataParameter("n", model.Sku.Replace(".", "")))).FirstOrDefault();
+
+
+                if (!string.IsNullOrWhiteSpace(code))
+                {
+                    model.AdditionalInformation = code;
+                }
+            }
+            else if ((await _workContext.GetCurrentCustomerAsync()).Id == 28704805)
+            {
+                model.LvivAvailability = Math.Min(lvivAvailability, 15) + " шт.";
+            }
+            else
+            {
+                model.LvivAvailability = await product.GetLvivStockQuantityForDisplayAsync(_workContext);
+            }
+
 
             //automatically generate product description?
             if (_seoSettings.GenerateProductMetaDescription && string.IsNullOrEmpty(model.MetaDescription))

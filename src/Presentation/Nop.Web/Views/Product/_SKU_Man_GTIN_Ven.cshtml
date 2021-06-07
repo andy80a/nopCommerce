@@ -17,6 +17,12 @@
             <span class="value" id="mpn-@Model.Id">@Model.ManufacturerPartNumber</span>
         </div>
     }
+@if (!String.IsNullOrWhiteSpace(Model.AdditionalInformation))
+{
+    <div class="manufacturer-part-number">
+        <span class="value">@Model.AdditionalInformation</span>
+    </div>
+}
     @*GTIN*@
     @if ((!string.IsNullOrWhiteSpace(Model.Gtin) || Model.ManageInventoryMethod == ManageInventoryMethod.ManageStockByAttributes) && Model.ShowGtin)
     {
@@ -33,4 +39,14 @@
             <span class="value"><a href="@Url.RouteUrl("Vendor", new { SeName = Model.VendorModel.SeName })">@Model.VendorModel.Name</a></span>
         </div>
     }
+<div >
+    <a href="/наличие-товаров" style="color: #3089CA">@T("Custom.Availability"):</a><span class="value"> @Model.KrakowAvailability @T("Custom.OneItem")</span>
 </div>
+
+<div >
+    <a href="/прогноз-наличия" style="color: #3089CA">@T("Custom.ForecastPolandAvailability"):</a><span class="value"> @Model.ForecastInPoland @T("Custom.OneItem")</span>
+</div>
+<div >
+    <a href="/товары-в-наличии-3" style="color: #3089CA">@T("Custom.LvivAvailability"):</a><span class="value"> @Model.LvivAvailability</span>
+</div>
+

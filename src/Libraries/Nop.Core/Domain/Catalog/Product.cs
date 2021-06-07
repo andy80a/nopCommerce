@@ -514,6 +514,26 @@ namespace Nop.Core.Domain.Catalog
         /// </summary>
         public DateTime? AvailableEndDateTimeUtc { get; set; }
 
+        public int AvailabilityInJanki { get; set; }
+        public int AvailabilityInJanki2 { get; set; }
+        public int AvailabilityInKrakow { get; set; }
+
+        public int AvailabilityInKyiv { get; set; }
+        public int AvailabilityInKatowice { get; set; }
+        public int AvailabilityInLublin { get; set; }
+
+        public int AvailabilityInLublin2 { get; set; }
+        public int AvailabilityInTargowek { get; set; }
+        public int AvailabilityInLviv { get; set; }
+        public int? AvailabilityInLvivExpectation { get; set; }
+        public int ForecastInPoland { get; set; }
+        
+        public int MaxLength { get; set; }
+
+        public decimal PriceRate { get; set; }
+        public decimal PriceRate2 { get; set; }
+        public bool DescriptionIsReviewed { get; set; }
+        
         /// <summary>
         /// Gets or sets a display order.
         /// This value is used when sorting associated products (used with "grouped" products)

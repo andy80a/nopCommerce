@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
+using LinqToDB.Data;
 using Nop.Core;
 using Nop.Core.Caching;
 using Nop.Core.Domain.Catalog;
@@ -11,6 +13,7 @@ using Nop.Core.Domain.Discounts;
 using Nop.Core.Domain.Localization;
 using Nop.Core.Domain.Orders;
 using Nop.Core.Domain.Shipping;
+using Nop.Core.Events;
 using Nop.Core.Infrastructure;
 using Nop.Data;
 using Nop.Services.Customers;
@@ -58,12 +61,22 @@ namespace Nop.Services.Catalog
         protected readonly IRepository<StockQuantityHistory> _stockQuantityHistoryRepository;
         protected readonly IRepository<TierPrice> _tierPriceRepository;
         protected readonly IRepository<Warehouse> _warehouseRepository;
+        private readonly IRepository<LvivStockQuantityHistory> _lvivStockQuantityHistoryRepository;
         protected readonly IStaticCacheManager _staticCacheManager;
         protected readonly IStoreMappingService _storeMappingService;
         protected readonly IStoreService _storeService;
         protected readonly IWorkContext _workContext;
+        private readonly INopDataProvider _dataProvider;
+        private readonly IEventPublisher _eventPublisher;
+        private readonly IStaticCacheManager _cacheManager;
+        private readonly ICategoryService _categoryService;
         protected readonly LocalizationSettings _localizationSettings;
 
+        public static CacheKey PRODUCTSLVIV_BY_ID_KEY => new CacheKey("Nop.productlviv.id-{0}");
+        /// <summary>
+        /// Key pattern to clear cache
+        /// </summary>
+        private const string PRODUCTSLVIV_PATTERN_KEY = "Nop.productlviv.";
         #endregion
 
         #region Ctor
@@ -97,10 +110,15 @@ namespace Nop.Services.Catalog
             IRepository<StockQuantityHistory> stockQuantityHistoryRepository,
             IRepository<TierPrice> tierPriceRepository,
             IRepository<Warehouse> warehouseRepository,
+            IRepository<LvivStockQuantityHistory> lvivStockQuantityHistoryRepository,
             IStaticCacheManager staticCacheManager,
             IStoreService storeService,
             IStoreMappingService storeMappingService,
             IWorkContext workContext,
+            INopDataProvider dataProvider,
+            IEventPublisher eventPublisher,
+            IStaticCacheManager cacheManager,
+            ICategoryService categoryService,
             LocalizationSettings localizationSettings)
         {
             _catalogSettings = catalogSettings;
@@ -132,10 +150,15 @@ namespace Nop.Services.Catalog
             _stockQuantityHistoryRepository = stockQuantityHistoryRepository;
             _tierPriceRepository = tierPriceRepository;
             _warehouseRepository = warehouseRepository;
+            _lvivStockQuantityHistoryRepository = lvivStockQuantityHistoryRepository;
             _staticCacheManager = staticCacheManager;
             _storeMappingService = storeMappingService;
             _storeService = storeService;
             _workContext = workContext;
+            _dataProvider = dataProvider;
+            _eventPublisher = eventPublisher;
+            _cacheManager = cacheManager;
+            _categoryService = categoryService;
             _localizationSettings = localizationSettings;
         }
 
@@ -1201,6 +1224,22 @@ namespace Nop.Services.Catalog
                         select p;
             var product = await query.FirstOrDefaultAsync();
 
+            return product;
+        }
+
+        public virtual async Task<Product> GetProductByManufacturerPartNumber(string sku)
+        {
+            if (String.IsNullOrEmpty(sku))
+                return null;
+
+            sku = sku.Trim();
+
+            var query = from p in _productRepository.Table
+                orderby p.Id
+                where !p.Deleted &&
+                      p.ManufacturerPartNumber == sku
+                select p;
+            var product = await query.FirstOrDefaultAsync();
             return product;
         }
 
@@ -2580,6 +2619,178 @@ namespace Nop.Services.Catalog
 
         #endregion
 
+        #region Lviv Stock
+
+        public async void AddLvivStockQuantityHistoryEntry(string articleNumber, int? orderId, int quantityAdjustment, int quantityReserved,
+            string message = "")
+        {
+            if (string.IsNullOrWhiteSpace(articleNumber))
+                throw new ArgumentNullException("articleNumber");
+
+
+            var historyEntry = new LvivStockQuantityHistory
+            {
+                ArticleNumber = articleNumber,
+                QuantityAdjustment = quantityAdjustment,
+                QuantityReserved = quantityReserved,
+                OrderId = orderId,
+                Message = message,
+                CreatedOnUtc = DateTime.UtcNow,
+                UpdatedOnUtc = DateTime.UtcNow
+            };
+
+            await _lvivStockQuantityHistoryRepository.InsertAsync(historyEntry);
+            //event notification
+            await _eventPublisher.EntityInsertedAsync(historyEntry);
+
+            //clear cache
+            _cacheManager.RemoveByPrefixAsync(PRODUCTSLVIV_PATTERN_KEY);
+            var product = await GetProductByManufacturerPartNumber(articleNumber);
+            await GetLvivStockQuantityAsync(product);//to recalculate availability in lviv
+        }
+
+        public virtual async void ReserveLvivInventory(int? orderId, Product product, int quantity)
+        {
+            if (product == null)
+                throw new ArgumentNullException("product");
+
+            var sql = @"
+  SELECT P.ArticleNumber as ArticleNumber,  P.Quantity as Quantity
+  FROM[dbo].[ProductParts] P 
+  WHERE P.ManufacturerPartNumber = @manufacturerPartNumber
+";
+            var parts =
+                await _dataProvider.QueryAsync<ArticleInfo>(sql, new DataParameter("manufacturerPartNumber", product.ManufacturerPartNumber));
+            foreach (var part in parts)
+            {
+                AddLvivStockQuantityHistoryEntry(part.ArticleNumber, orderId, 0,
+                    part.Quantity * quantity * -1, "");
+            }
+        }
+
+        public async void DeleteLvivReservation(int orderId)
+        {
+            var recordsToDelete = _lvivStockQuantityHistoryRepository.Table.Where(x => x.OrderId == orderId && x.QuantityReserved != 0).ToList();
+            foreach (var record in recordsToDelete)
+            {
+                _lvivStockQuantityHistoryRepository.DeleteAsync(record);
+            }
+            //clear cache
+            _cacheManager.RemoveByPrefixAsync(PRODUCTSLVIV_PATTERN_KEY);
+        }
+
+        public async void ConfirmLvivReservation(int orderId)
+        {
+            var records = _lvivStockQuantityHistoryRepository.Table.Where(x => x.OrderId == orderId && x.QuantityReserved != 0).ToList();
+            foreach (var record in records)
+            {
+                record.QuantityAdjustment = record.QuantityReserved;
+                record.QuantityReserved = 0;
+                record.UpdatedOnUtc = DateTime.UtcNow;
+                _lvivStockQuantityHistoryRepository.UpdateAsync(record);
+            }
+        }
+
+        public async Task<int> GetLvivStockQuantityAsync(Product product)
+        {
+            if (product == null)
+            {
+                return 0;
+            }
+            var cacheKey = _staticCacheManager.PrepareKeyForDefaultCache(PRODUCTSLVIV_BY_ID_KEY, product.Id);
+            return await _cacheManager.GetAsync(cacheKey, ()=> GetLvivStockQuantityInternal(product));
+        }
+
+        private async Task<int> GetLvivStockQuantityInternal(Product product)
+        {
+            var sql = @"
+           SELECT ISNULL(MIN((IsNull(L.QuantityAdjustment, 0) + IsNull(L.QuantityReserved, 0)) / P.Quantity), 0)
+  FROM[dbo].[ProductParts] P 
+   LEFT JOIN LvivStockQuantityHistoryView L ON L.ArticleNumber = P.ArticleNumber
+  WHERE P.ManufacturerPartNumber = @manufacturerPartNumber
+";
+
+            var result =
+                (await _dataProvider.QueryAsync<int>(sql,
+                    new DataParameter("manufacturerPartNumber", product.ManufacturerPartNumber))).First();
+
+            if (product.AvailabilityInLviv != result)
+            {
+
+                product.AvailabilityInLviv = result;
+                product.StockQuantity = product.AvailabilityInLviv +
+                                        product.AvailabilityInJanki + product.AvailabilityInLublin +
+                                        product.AvailabilityInKrakow + product.AvailabilityInTargowek +
+                                        product.AvailabilityInKatowice;
+
+                await UpdateProductAsync(product);
+                int inStockCategoryId = 14820;
+                if (product.AvailabilityInLviv > 0)
+                {
+                    var productCategory =
+                        (await _categoryService.GetProductCategoriesByProductIdAsync(product.Id))
+                        .FirstOrDefault(x => x.CategoryId == inStockCategoryId);
+                    if (productCategory == null)
+                    {
+                        productCategory = new ProductCategory();
+                        productCategory.ProductId = product.Id;
+                        productCategory.CategoryId = inStockCategoryId;
+                        productCategory.DisplayOrder = (int)Math.Round(product.Price * 100);
+                        await _categoryService.InsertProductCategoryAsync(productCategory);
+                    }
+                }
+                else
+                {
+                    var category =
+                        (await _categoryService
+                            .GetProductCategoriesByProductIdAsync(product.Id))
+                        .FirstOrDefault(x => x.CategoryId == inStockCategoryId);
+                    if (category != null)
+                    {
+                        await _categoryService.DeleteProductCategoryAsync(category);
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        public IList<LvivStockQuantityHistory> GetAllLvivStockQuantityHistory(string articleNumber,
+            string goDirectlyToCustomOrderNumber)
+        {
+            var query = _lvivStockQuantityHistoryRepository.Table;
+            if (!String.IsNullOrEmpty(articleNumber))
+                query = query.Where(s => s.ArticleNumber.Contains(articleNumber) && !s.ArticleNumber.ToLower().StartsWith("z"));
+            int orderId = 0;
+            if (!String.IsNullOrEmpty(goDirectlyToCustomOrderNumber))
+            {
+
+                Int32.TryParse(goDirectlyToCustomOrderNumber, out orderId);
+                query = query.Where(s => s.OrderId == orderId);
+            }
+
+
+            query = query.OrderBy(s => s.Id);
+            var result = query.ToList();
+            if (orderId == 0)
+            {
+                int qrSum = 0, qaSum = 0;
+                foreach (var item in result)
+                {
+                    qrSum = qrSum + item.QuantityReserved;
+                    item.QuantityReservedSum = qrSum;
+                    qaSum = qaSum + item.QuantityAdjustment;
+                    item.QuantityAdjustmentSum = qaSum;
+                }
+            }
+            return result.OrderByDescending(s => s.Id).ToList();
+        }
+
+
+
+        #endregion
+
+
         #region Product discounts
 
         /// <summary>
@@ -2655,5 +2866,12 @@ namespace Nop.Services.Catalog
         #endregion
 
         #endregion
+    }
+
+    [Serializable]
+    public class ArticleInfo
+    {
+        public int Quantity { get; set; }
+        public string ArticleNumber { get; set; }
     }
 }

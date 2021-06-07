@@ -3877,6 +3877,11 @@ input + .inputs-icons {
 	transition: color .2s ease;
 }
 
+
+.additional-details {
+	text-align:left;
+}
+
 .overview .additional-details,
 .variant-overview .additional-details {
 	margin-bottom: 30px;
@@ -4480,9 +4485,11 @@ td.add-to-cart label,
 	font-size: 14px;
 	color: #8c8c8c;
 }
+
+
 .overview .product-price,
 .variant-overview .product-price {
-	font-size: 25px;
+	font-size: 30px !important;
 	color: #97c300;
 	font-weight: bold;
 }
