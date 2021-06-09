@@ -28,11 +28,15 @@
 
     var addtowishlistlink = Url.RouteUrl("AddProductToCart-Catalog", new { productId = Model.Id, shoppingCartTypeId = (int)ShoppingCartType.Wishlist, quantity = quantity });
     var addtocomparelink = Url.RouteUrl("AddProductToCompare", new { productId = Model.Id });
-
+	var url = Url.RouteUrl("Product", new { SeName = Model.SeName });
     var storeId = (await storeContext.GetCurrentStoreAsync()).Id;
 }
 
 <div class="product-item" data-productid="@Model.Id">
+    <div class="ribbon-wrapper">
+        @if (!String.IsNullOrWhiteSpace(Model.RibbonName)){<a class="ribbon-position top-left" href="@url"><div class="product-ribbon"><img src="@Model.RibbonUrl" width="@Model.RibbonWidth" height="@Model.RibbonHeight"><label class="ribbon-image-text">@Model.RibbonName</label></div></a>}
+   
+
     <div class="picture">
         <a href="@Url.RouteUrl("Product", new { SeName = Model.SeName })" title="@Model.DefaultPictureModel.Title">
             @if (viewComponentSelector.SelectComponent("LazyLoadImage") != null)
@@ -62,6 +66,7 @@
             }
         </div>
     </div>
+	</div>
     <div class="details">
         <h2 class="product-title">
             <a href="@Url.RouteUrl("Product", new {SeName = Model.SeName})">@Model.Name</a>

@@ -35,6 +35,7 @@ using Nop.Web.Infrastructure.Cache;
 using Nop.Web.Models.Catalog;
 using Nop.Web.Models.Common;
 using Nop.Web.Models.Media;
+using RibbonInfo;
 
 namespace Nop.Web.Factories
 {
@@ -1234,6 +1235,31 @@ namespace Nop.Web.Factories
                         (!product.MarkAsNewEndDateTimeUtc.HasValue || product.MarkAsNewEndDateTimeUtc.Value > DateTime.UtcNow)
                 };
 
+                var ribbons = product.Ribbons;
+                if (product.AvailabilityInLviv > 0)
+                {
+                    ribbons = RibbonHelper.Add(ribbons, RibbonHelper.RibbonIdInLviv);
+
+                }
+                if (!string.IsNullOrWhiteSpace(ribbons))
+                {
+                    var ribbon = RibbonHelper.GetFromIds(ribbons);
+                    if (ribbon != null)
+                    {
+                        model.RibbonUrl = ribbon.ImageUrl;
+                        model.RibbonHeight = ribbon.Height;
+                        model.RibbonWidth = ribbon.Width;
+                        if ((await _workContext.GetWorkingLanguageAsync()).Id == 4)
+                        {
+                            model.RibbonName = ribbon.NameUa;
+                        }
+                        else
+                        {
+                            model.RibbonName = ribbon.Name;
+                        }
+                    }
+                }
+
                 //price
                 if (preparePriceModel)
                 {
@@ -1375,6 +1401,13 @@ namespace Nop.Web.Factories
 
             var lvivAvailability = await product.GetLvivStockQuantityAsync();
 
+            var ribbons = product.Ribbons;
+            if (lvivAvailability > 0)
+            {
+                ribbons = RibbonHelper.Add(ribbons, RibbonHelper.RibbonIdInLviv);
+            }
+
+            
             if ( await _permissionService.AuthorizeAsync(StandardPermissionProvider.ManageOrders))
             {
                 model.LvivAvailability = lvivAvailability + " шт." + " / " + product.AvailabilityInLvivExpectation;
@@ -1401,6 +1434,29 @@ WHERE [ArticleNumber] = @n
                 model.LvivAvailability = await product.GetLvivStockQuantityForDisplayAsync(_workContext);
             }
 
+            if (!product.Published)
+            {
+                ribbons = RibbonHelper.Add(ribbons, RibbonHelper.RibbonIdOutdated);
+
+            }
+            if (!string.IsNullOrWhiteSpace(ribbons))
+            {
+                var ribbon = RibbonHelper.GetFromIds(ribbons);
+                if (ribbon != null)
+                {
+                    model.RibbonUrl = ribbon.ImageUrl;
+                    model.RibbonWidth = ribbon.Width;
+                    model.RibbonHeight = ribbon.Height;
+                    if ((await _workContext.GetWorkingLanguageAsync()).Id == 4) // ukdaine
+                    {
+                        model.RibbonName = ribbon.NameUa;
+                    }
+                    else
+                    {
+                        model.RibbonName = ribbon.Name;
+                    }
+                }
+            }
 
             //automatically generate product description?
             if (_seoSettings.GenerateProductMetaDescription && string.IsNullOrEmpty(model.MetaDescription))

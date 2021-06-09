@@ -80,11 +80,23 @@
                         @await Html.PartialAsync("_ProductDetailsPictures", Model)
                     }
                     <div class="overview">
+                                    
+                        
                         <div class="prev-next-holder">
-                            @await Component.InvokeAsync("Widget", new { widgetZone = PublicWidgetZones.ProductDetailsOverviewTop, additionalData = Model })
+                            @await Component.InvokeAsync("Widget", new {widgetZone = PublicWidgetZones.ProductDetailsOverviewTop, additionalData = Model})
                         </div>
                         <!--product breadcrumb-->
                         @await Html.PartialAsync("_ProductBreadcrumb", Model.Breadcrumb)
+                        @if (!String.IsNullOrWhiteSpace(Model.RibbonName))
+                        {	
+                            <div class="ribbon-position-details">
+                                <div class="product-ribbon">
+                                    <img src="@Model.RibbonUrl" width="@Model.RibbonWidth" height="@Model.RibbonHeight">
+                                    <label class="ribbon-image-text">@Model.RibbonName</label>
+                                </div>
+                            </div>
+                        }       
+
                         @await Html.PartialAsync("_Discontinued", Model)
                         <div class="product-name">
                             <h1>
@@ -125,7 +137,7 @@
                             @{
                                 var dataDictRental = new ViewDataDictionary(ViewData);
                                 dataDictRental.TemplateInfo.HtmlFieldPrefix = $"rental_{Model.Id}";
-                                 @await Html.PartialAsync("_RentalInfo", Model, dataDictRental)
+                                @await Html.PartialAsync("_RentalInfo", Model, dataDictRental)
                             }
 
                             @await Html.PartialAsync("_ProductTierPrices", Model.TierPrices)
@@ -134,13 +146,13 @@
                         {
                             @await Html.PartialAsync("_ShareButton", Model)
                         }
-                        @await Component.InvokeAsync("Widget", new { widgetZone = PublicWidgetZones.ProductDetailsOverviewBottom, additionalData = Model })
+                        @await Component.InvokeAsync("Widget", new {widgetZone = PublicWidgetZones.ProductDetailsOverviewBottom, additionalData = Model})
 
                         <div class="product-prices-box">
                             <div>
                                 <!--availability-->
                                 @await Html.PartialAsync("_Availability", Model)
-                                @await Component.InvokeAsync("Widget", new { widgetZone = PublicWidgetZones.ProductDetailsInsideOverviewButtonsBefore, additionalData = Model })
+                                @await Component.InvokeAsync("Widget", new {widgetZone = PublicWidgetZones.ProductDetailsInsideOverviewButtonsBefore, additionalData = Model})
                                 <!--price & add to cart-->
                                 @{
                                     var dataDictPrice = new ViewDataDictionary(ViewData);
@@ -159,35 +171,34 @@
                                     dataDictAddToWishlist.TemplateInfo.HtmlFieldPrefix = $"addtocart_{Model.Id}";
                                     @await Html.PartialAsync("_AddToWishlist", Model.AddToCart, dataDictAddToWishlist)
                                 }
-                                @await Component.InvokeAsync("Widget", new { widgetZone = PublicWidgetZones.ProductDetailsInsideOverviewButtonsAfter, additionalData = Model })
+                                @await Component.InvokeAsync("Widget", new {widgetZone = PublicWidgetZones.ProductDetailsInsideOverviewButtonsAfter, additionalData = Model})
                                 <!--delivery-->
-                                @await Html.PartialAsync("_ProductEstimateShipping", Model.ProductEstimateShipping)
                                 @await Html.PartialAsync("_DeliveryInfo", Model)
 
-									  
 
-                                 
+
+
                                 <div class="short-description" align="left">
-                                <p>@T("Custom.DiscountDescription")</p>
-          @if (true)
-          {
-              //use fancybox to how nice pop-up
-              Html.AddScriptParts("~/Scripts/jquery.fancybox-1.3.4.pack.js");
-              Html.AddCssFileParts("~/Content/fancybox/jquery.fancybox-1.3.4.css");
-          }
-          <br/><a id="10reasons" href="#" style="color: #3089CA;" onclick="return false;"><b>@T("Custom.TenReasons")</b></a>
-          <script type="text/javascript">
-              $("#10reasons").fancybox({
-                  'href': '@(Url.RouteUrl("tenreasons"))',
-                  'speedIn': 600,
-                  'speedOut': 200,
-                  'width': 800,
-                  'height': 480,
-                  'type': 'iframe',
-                  'centerOnScroll': true
-              });
-          </script>
-          </div>
+                                    <p>@T("Custom.DiscountDescription")</p>
+                                    @if (true)
+                                    {
+                                        //use fancybox to how nice pop-up
+                                        Html.AddScriptParts("~/Scripts/jquery.fancybox-1.3.4.pack.js");
+                                        Html.AddCssFileParts("~/Content/fancybox/jquery.fancybox-1.3.4.css");
+                                    }
+                                    <br/><a id="10reasons" href="#" style="color: #3089CA;" onclick="return false;"><b>@T("Custom.TenReasons")</b></a>
+                                    <script type="text/javascript">
+                                        $("#10reasons").fancybox({
+                                            'href': '@(Url.RouteUrl("tenreasons"))',
+                                            'speedIn': 600,
+                                            'speedOut': 200,
+                                            'width': 800,
+                                            'height': 480,
+                                            'type': 'iframe',
+                                            'centerOnScroll': true
+                                        });
+                                    </script>
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -9718,3 +9718,35 @@ td.latest-post {
     padding: 0.521em 1.456em 0 1.768em;
 }
 
+.product-ribbon {
+    display: inline-block;
+    position: relative;
+    vertical-align: middle;
+}
+
+.ribbon-image-text {
+    color: #fff!important;
+    font-family: Helvetica,​Arial,​sans-serif!important;
+    font-size: 12px!important;
+    font-weight: 700!important;
+    left: 7px!important;
+    top: 3px!important;
+	line-height: normal;
+    position: absolute;
+}
+
+.ribbon-position.top-left {
+    left: 0;
+    top: 0;
+}
+
+.ribbon-wrapper {
+    position: relative;
+}
+.ribbon-position {
+    font-size: 0;
+    line-height: 0;
+    position: absolute;
+    transition: all .15s ease-in-out 0s;
+    z-index: 100;
+}

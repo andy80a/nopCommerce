@@ -16,6 +16,12 @@ namespace Nop.Web.Models.Catalog
         }
 
         public string Name { get; set; }
+
+        public string RibbonName { get; set; }
+        public string RibbonUrl { get; set; }
+        public int RibbonWidth { get; set; }
+        public int RibbonHeight { get; set; }
+
         public string ShortDescription { get; set; }
         public string FullDescription { get; set; }
         public string SeName { get; set; }

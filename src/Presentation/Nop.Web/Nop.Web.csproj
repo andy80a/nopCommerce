@@ -19,8 +19,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\..\.NETStandard\BinotelApi\BinotelApi.csproj" />
     <ProjectReference Include="..\..\..\..\.NETStandard\MeestExpressApi\MeestExpressApi.csproj" />
     <ProjectReference Include="..\..\..\..\.NETStandard\NovaPoshtaApi\NovaPoshtaApi.csproj" />
+    <ProjectReference Include="..\..\..\..\.NETStandard\RibbonInfo\RibbonInfo.csproj" />
     <ProjectReference Include="..\..\..\..\.NETStandard\SatApi\SatApi.csproj" />
     <ProjectReference Include="..\..\Libraries\Nop.Core\Nop.Core.csproj" />
     <ProjectReference Include="..\..\Libraries\Nop.Data\Nop.Data.csproj" />

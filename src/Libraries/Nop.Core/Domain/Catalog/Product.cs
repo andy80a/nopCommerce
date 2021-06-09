@@ -527,7 +527,9 @@ namespace Nop.Core.Domain.Catalog
         public int AvailabilityInLviv { get; set; }
         public int? AvailabilityInLvivExpectation { get; set; }
         public int ForecastInPoland { get; set; }
-        
+
+        public string Ribbons { get; set; }
+
         public int MaxLength { get; set; }
 
         public decimal PriceRate { get; set; }

@@ -127,6 +127,11 @@ namespace Nop.Web.Models.Catalog
 
         public bool AllowAddingOnlyExistingAttributeCombinations { get; set; }
 
+        public string RibbonName { get; set; }
+        public string RibbonUrl { get; set; }
+        public int RibbonWidth { get; set; }
+        public int RibbonHeight { get; set; }
+
         #region Nested Classes
 
         public partial record ProductBreadcrumbModel : BaseNopModel
