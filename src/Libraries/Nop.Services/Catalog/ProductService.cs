@@ -61,6 +61,7 @@ namespace Nop.Services.Catalog
         protected readonly IRepository<StockQuantityHistory> _stockQuantityHistoryRepository;
         protected readonly IRepository<TierPrice> _tierPriceRepository;
         protected readonly IRepository<Warehouse> _warehouseRepository;
+        private readonly IRepository<ComplementaryProduct> _complementaryProductRepository;
         private readonly IRepository<LvivStockQuantityHistory> _lvivStockQuantityHistoryRepository;
         protected readonly IStaticCacheManager _staticCacheManager;
         protected readonly IStoreMappingService _storeMappingService;
@@ -110,6 +111,7 @@ namespace Nop.Services.Catalog
             IRepository<StockQuantityHistory> stockQuantityHistoryRepository,
             IRepository<TierPrice> tierPriceRepository,
             IRepository<Warehouse> warehouseRepository,
+            IRepository<ComplementaryProduct> complementaryProductRepository,
             IRepository<LvivStockQuantityHistory> lvivStockQuantityHistoryRepository,
             IStaticCacheManager staticCacheManager,
             IStoreService storeService,
@@ -150,6 +152,7 @@ namespace Nop.Services.Catalog
             _stockQuantityHistoryRepository = stockQuantityHistoryRepository;
             _tierPriceRepository = tierPriceRepository;
             _warehouseRepository = warehouseRepository;
+            _complementaryProductRepository = complementaryProductRepository;
             _lvivStockQuantityHistoryRepository = lvivStockQuantityHistoryRepository;
             _staticCacheManager = staticCacheManager;
             _storeMappingService = storeMappingService;
@@ -1953,6 +1956,28 @@ namespace Nop.Services.Catalog
         public virtual async Task<IList<CrossSellProduct>> GetCrossSellProductsByProductId1Async(int productId1, bool showHidden = false)
         {
             return await GetCrossSellProductsByProductIdsAsync(new[] { productId1 }, showHidden);
+        }
+
+        public virtual async Task<IList<ComplementaryProduct>> GetComplementaryProductsByProductId1Async(int productId1, bool showHidden = false)
+        {
+            return await GetComplementaryProductsByProductIdsAsync(new[] { productId1 }, showHidden);
+        }
+
+        protected virtual async Task<IList<ComplementaryProduct>> GetComplementaryProductsByProductIdsAsync(int[] productIds, bool showHidden = false)
+        {
+            if (productIds == null || productIds.Length == 0)
+                return new List<ComplementaryProduct>();
+
+            var query = from csp in _complementaryProductRepository.Table
+                join p in _productRepository.Table on csp.ProductId2 equals p.Id
+                where productIds.Contains(csp.ProductId1) &&
+                      !p.Deleted &&
+                      (showHidden || p.Published)
+                orderby csp.Id
+                select csp;
+            var crossSellProducts = await query.ToListAsync();
+
+            return crossSellProducts;
         }
 
         /// <summary>

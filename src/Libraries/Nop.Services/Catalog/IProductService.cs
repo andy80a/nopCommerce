@@ -939,5 +939,6 @@ namespace Nop.Services.Catalog
         #endregion
 
         Task<int> GetLvivStockQuantityAsync(Product product);
+        Task<IList<ComplementaryProduct>> GetComplementaryProductsByProductId1Async(int productId, bool showHidden = false);
     }
 }

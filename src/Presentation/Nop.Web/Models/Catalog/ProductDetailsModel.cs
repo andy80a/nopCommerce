@@ -119,6 +119,8 @@ namespace Nop.Web.Models.Catalog
 
         public int ForecastInPoland { get; set; }
 
+        public int ComplementaryProductsCount { get; set; }
+
         public string LvivAvailability { get; set; }
 
         public string AdditionalInformation { get; set; }

@@ -5,11 +5,13 @@
         @foreach (var tabInfo in Model.Tabs)
         {
             <li>
-                <a href="#quickTab-@tabInfo.TabKey">@tabInfo.Title</a>
+                <a href="#quickTab-@tabInfo.TabKey">@tabInfo.Title @(tabInfo.TabKey == "reviews" && Model.ProductModel.ProductReviewOverview.TotalReviews >0 ? " (" + Model.ProductModel.ProductReviewOverview.TotalReviews + ")" : "")</a>
             </li>
         }
-        @* Uncomment the code below if you want to have a Tab that gets its information from a Topic. This tab will be shown for all products in your store*@
-        @*<li><a href="#quickTab-ShippingInfo">@T("ShippingReturns")</a> </li>*@
+        @if (Model.ProductModel.ComplementaryProductsCount > 0)
+        {
+            <li><a href="#quickTab-RelatedProducts">@T("Custom.AdditionalProducts") (@Model.ProductModel.ComplementaryProductsCount)</a> </li>
+        }
     </ul>
 </div>
 <div class="productTabs-body">
@@ -19,8 +21,10 @@
             @Html.Raw(tabInfo.Content)
         </div>
     }
-    @* Uncomment the code below if you want to have a Tab that gets its information from a Topic. This tab will be shown for all products in your store *@
-        @*<div id="quickTab-ShippingInfo">
-        @await Component.InvokeAsync("TopicBlock", new { systemName = "ShippingInfo" })
-        </div>*@
+@if (Model.ProductModel.ComplementaryProductsCount > 0)
+{
+    <div id="quickTab-RelatedProducts">
+        @await Component.InvokeAsync("ComplementaryProducts", new {productId = Model.ProductId})
+    </div>
+}
 </div>

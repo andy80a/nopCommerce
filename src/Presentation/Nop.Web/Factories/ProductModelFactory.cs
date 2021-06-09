@@ -1359,6 +1359,7 @@ namespace Nop.Web.Factories
                 AvailableEndDate = product.AvailableEndDateTimeUtc,
                 KrakowAvailability = product.AvailabilityInKrakow + product.AvailabilityInKatowice + product.AvailabilityInJanki + product.AvailabilityInTargowek + product.AvailabilityInLublin,
                 ForecastInPoland = product.ForecastInPoland,
+                ComplementaryProductsCount = (await _productService.GetComplementaryProductsByProductId1Async(product.Id)).Count,
 
                 VisibleIndividually = product.VisibleIndividually,
                 AllowAddingOnlyExistingAttributeCombinations = product.AllowAddingOnlyExistingAttributeCombinations

@@ -3,3 +3,28 @@ Theme colors
 
 
 1  включити shipping by weight
+
+
+
+
+  UPdate [dbo].[LocaleStringResource]
+  SET [ResourceValue] = 'Характеристики' 
+  WHERE ResourceName='sevenspikes.nopquicktabs.client.tabs.description'
+
+
+    UPdate [dbo].[LocaleStringResource]
+  SET [ResourceValue] = 'Технічна інформація' 
+  WHERE LanguageId=4 AND ResourceName='sevenspikes.nopquicktabs.client.tabs.specifications'
+
+    UPdate [dbo].[LocaleStringResource]
+  SET [ResourceValue] = 'Техническая информация' 
+  WHERE LanguageId=2 AND ResourceName='sevenspikes.nopquicktabs.client.tabs.specifications'
+
+
+      UPdate [dbo].[LocaleStringResource]
+  SET [ResourceValue] = 'Відгуки' 
+  WHERE LanguageId=4 AND ResourceName='sevenspikes.nopquicktabs.client.tabs.reviews'
+
+    UPdate [dbo].[LocaleStringResource]
+  SET [ResourceValue] = 'Отзывы' 
+  WHERE LanguageId=2 AND ResourceName='sevenspikes.nopquicktabs.client.tabs.reviews'
