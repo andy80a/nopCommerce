@@ -32,38 +32,14 @@
             </ul>
         </div>
     </li>
-    @if (Model.DisplayHomepageMenuItem)
-    {
-        <li><a href="@Url.RouteUrl("Homepage")">@T("HomePage")</a></li>
-    }
-    @foreach (var topic in Model.Topics)
-    {
-        <li><a href="@Url.RouteUrl("Topic", new { SeName = topic.SeName })">@topic.Name</a></li>
-    }
-    @if (Model.NewProductsEnabled && Model.DisplayNewProductsMenuItem)
-    {
-        <li><a href="@Url.RouteUrl("NewProducts")">@T("Products.NewProducts")</a></li>
-    }
-    @if (Model.DisplayProductSearchMenuItem)
-    {
-        <li><a href="@Url.RouteUrl("ProductSearch")">@T("Search")</a></li>
-    }
-    @if (Model.DisplayCustomerInfoMenuItem)
-    {
-        <li><a href="@Url.RouteUrl("CustomerInfo")">@T("Account.MyAccount")</a></li>
-    }
-    @if (Model.BlogEnabled && Model.DisplayBlogMenuItem)
-    {
-        <li><a href="@Url.RouteUrl("Blog")">@T("Blog")</a></li>
-    }
-    @if (Model.ForumEnabled && Model.DisplayForumsMenuItem)
-    {
+
+        <li><a href="@Url.RouteUrl("Category", new { SeName = T("Custom.Sales") })">@T("Custom.Sales")</a></li>
+        <li><a href="@Url.RouteUrl("InStock")?orderby=10">@T("Custom.InStockItems")</a></li>
+        <li><a href="@Url.RouteUrl("Topic", new { SeName = await Html.GetTopicSeNameAsync("howtoorder")})">@T("Custom.HowToOrder")</a></li>
+        <li><a href="@Url.RouteUrl("Topic",  new { SeName = await Html.GetTopicSeNameAsync("shippinginfo")})">@T("Custom.ShippingInfo")</a></li>
         <li><a href="@Url.RouteUrl("Boards")">@T("Forum.Forums")</a></li>
-    }
-    @if (Model.DisplayContactUsMenuItem)
-    {
-        <li><a href="@Url.RouteUrl("ContactUs")">@T("ContactUs")</a></li>
-    }	   
+		<li><a href="@Url.RouteUrl("Topic",  new { SeName = await Html.GetTopicSeNameAsync("aboutus")})">@T("AboutUs")</a></li>
+
 <li>@await Component.InvokeAsync("LanguageSelector")</li>
     @await Component.InvokeAsync("Widget", new { widgetZone = PublicWidgetZones.HeaderMenuAfter })
 </ul>

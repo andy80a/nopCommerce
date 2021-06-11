@@ -28,3 +28,36 @@ Theme colors
     UPdate [dbo].[LocaleStringResource]
   SET [ResourceValue] = 'Отзывы' 
   WHERE LanguageId=2 AND ResourceName='sevenspikes.nopquicktabs.client.tabs.reviews'
+  
+  
+    UPdate [dbo].[LocaleStringResource]
+  SET [ResourceValue] = 'Категории' 
+  WHERE LanguageId=2 AND ResourceName='sevenspikes.themes.emporium.header.allcategories'
+
+      UPdate [dbo].[LocaleStringResource]
+  SET [ResourceValue] = 'Категорії' 
+  WHERE LanguageId=4 AND ResourceName='sevenspikes.themes.emporium.header.allcategories'
+  
+  
+    Update [Topic]
+  set IncludeInFooterColumn3 =1, DisplayOrder=1 
+  where SystemName='AboutUs'
+
+
+  
+  Update [Topic]
+  set IncludeInFooterColumn3 =1, DisplayOrder=3
+  where SystemName='HowToOrder'
+
+  
+  Update [Topic]
+  set IncludeInFooterColumn3 =1, DisplayOrder=2 
+  where SystemName='ShippingInfo'
+  
+    UPdate [dbo].[LocaleStringResource]
+  SET [ResourceValue] = 'Підписка на новини' 
+  WHERE LanguageId=4 AND ResourceName='Account.Fields.Newsletter'
+  
+      UPdate [dbo].[LocaleStringResource]
+  SET [ResourceValue] = 'Побажання' 
+  WHERE LanguageId=4 AND [ResourceValue]='Бажання'
