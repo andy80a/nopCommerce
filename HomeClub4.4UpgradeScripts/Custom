@@ -75,3 +75,36 @@ Theme colors
     Update [Setting]
   set Value=0
   where name='displaydefaultfooteritemsettings.DisplayProductSearchFooterItem'
+  
+  
+  Update [Setting]
+  set Value=0
+  where name='displaydefaultfooteritemsettings.DisplaySitemapFooterItem'
+  
+  
+  
+    UPdate [dbo].[LocaleStringResource]
+  SET [ResourceValue] = 'Следите за нами' 
+  WHERE LanguageId=2 AND ResourceName='sevenspikes.themes.emporium.footer.follow'
+
+      UPdate [dbo].[LocaleStringResource]
+  SET [ResourceValue] = 'Слідкуйте за нами' 
+  WHERE LanguageId=4 AND ResourceName='sevenspikes.themes.emporium.footer.follow'
+
+
+
+      UPdate [dbo].[LocaleStringResource]
+  SET [ResourceValue] = ' ' 
+  WHERE LanguageId=2 AND ResourceName='sevenspikes.themes.emporium.common.paymentoptions'
+
+      UPdate [dbo].[LocaleStringResource]
+  SET [ResourceValue] = ' ' 
+  WHERE LanguageId=4 AND ResourceName='sevenspikes.themes.emporium.common.paymentoptions'
+
+      UPdate [dbo].[LocaleStringResource]
+  SET [ResourceValue] = 'Фильтры' 
+  WHERE LanguageId=2 AND ResourceName='SevenSpikes.Themes.Common.Filters'
+
+      UPdate [dbo].[LocaleStringResource]
+  SET [ResourceValue] = 'Фільтри' 
+  WHERE LanguageId=4 AND ResourceName='SevenSpikes.Themes.Common.Filters'

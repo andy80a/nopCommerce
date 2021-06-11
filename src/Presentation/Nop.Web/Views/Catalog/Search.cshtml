@@ -86,6 +86,17 @@
                 </div>
             </form>
         </div>
+
+<script>
+  (function(d) {
+    var s = d.createElement('script');
+    s.defer = true;
+    s.src = 'https://multisearch.io/plugin/@T("Custom.SearchId")';
+    if (d.head) d.head.appendChild(s);
+  })(document);
+</script>	
+		
+		
         @await Html.PartialAsync("_CatalogSelectors", Model.CatalogProductsModel)
         @await Component.InvokeAsync("Widget", new { widgetZone = PublicWidgetZones.ProductSearchPageBeforeResults })
         <div class="search-results">
