@@ -12,7 +12,13 @@
     var removeDesignedBy = await settingService.GetSettingByKeyAsync("emporiumthemesettings.removedesignedby", false, storeId, true);
     var footerLogoUrl = await Component.InvokeAsync("Widget", new { widgetZone = "emporium_footer_logo" });
 }
-
+<script type="text/javascript">
+    (function(d, w, s) {
+        var widgetId = '@T("Custom.BinotelId")', gcw = d.createElement(s); gcw.type = 'text/javascript'; gcw.async = true;
+        gcw.src = '//widgets.binotel.com/getcall/widgets/'+ widgetId +'.js';
+        var sn = d.getElementsByTagName(s)[0]; sn.parentNode.insertBefore(gcw, sn);
+    })(document, window, 'script');
+</script>
 <div class="footer">
     @await Component.InvokeAsync("Widget", new { widgetZone = "footer_top" })
     <div class="footer-upper">
@@ -130,38 +136,22 @@
                 <h3 class="title">@T("SevenSpikes.Themes.Emporium.Common.PaymentOptions")</h3>
                 <img src="@Url.Content("~/Themes/Emporium/Content/img/pay_icon1.png")" alt="" />
                 <img src="@Url.Content("~/Themes/Emporium/Content/img/pay_icon2.png")" alt="" />
-                <img src="@Url.Content("~/Themes/Emporium/Content/img/pay_icon3.png")" alt="" />
-                <img src="@Url.Content("~/Themes/Emporium/Content/img/pay_icon6.png")" alt="" />
             </div>
         </div>
     </div>
     <div class="footer-lower">
-        @if (!removeCopyright)
-        {
-            <div class="footer-powered-by">
-                Powered by <a href="@(OfficialSite.Main)">nopCommerce</a>
-                @*Would you like to remove the "Powered by nopCommerce" link in the bottom of the footer?
-                    Find more info here https://www.nopcommerce.com/nopcommerce-copyright-removal-key*@
-            </div>
-        }
-        @if (!removeDesignedBy)
-        {
-            <div class="footer-designed-by">
-                Designed by <a href="https://www.nop-templates.com/" target="_blank">Nop-Templates.com</a>
-            </div>
-        }
+     
         <div class="footer-disclaimer">
             @T("Content.CopyrightNotice", DateTime.Now.Year, Model.StoreName)
         </div>
-        @if (Model.DisplayTaxShippingInfoFooter)
-        {
-            var inclTax = await workContext.GetTaxDisplayTypeAsync() == TaxDisplayType.IncludingTax;
-            <div class="footer-tax-shipping">
-                @T(inclTax ? "Footer.TaxShipping.InclTax" : "Footer.TaxShipping.ExclTax", Url.RouteUrl("Topic", new { SeName = await Html.GetTopicSeNameAsync("shippinginfo") }))
-            </div>
-        }
-
-        @await Component.InvokeAsync("StoreThemeSelector")
     </div>
     @await Component.InvokeAsync("Widget", new { widgetZone = PublicWidgetZones.Footer })
 </div>
+
+<script src="//code.jivosite.com/widget/@Model.JivositeId" async></script>
+
+<script type='text/javascript'>
+
+@Html.Raw(Model.JivositeUserInfo)
+
+    </script>

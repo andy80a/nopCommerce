@@ -492,9 +492,32 @@ namespace Nop.Web.Factories
                 DisplayCustomerAddressesFooterItem = _displayDefaultFooterItemSettings.DisplayCustomerAddressesFooterItem,
                 DisplayShoppingCartFooterItem = _displayDefaultFooterItemSettings.DisplayShoppingCartFooterItem,
                 DisplayWishlistFooterItem = _displayDefaultFooterItemSettings.DisplayWishlistFooterItem,
-                DisplayApplyVendorAccountFooterItem = _displayDefaultFooterItemSettings.DisplayApplyVendorAccountFooterItem
+                DisplayApplyVendorAccountFooterItem = _displayDefaultFooterItemSettings.DisplayApplyVendorAccountFooterItem,
+                JivositeId = await _localizationService.GetResourceAsync("Custom.JivositeId"),
+                JivositeUserInfo = ""
             };
 
+
+            var customer = await _workContext.GetCurrentCustomerAsync();
+            if (customer != null)
+            {
+                model.JivositeUserInfo = string.Format(
+                    @"
+  function jivo_onLoadCallback() {{
+    jivo_api.setContactInfo({{
+    ""name"": ""{0}"",
+    ""email"": ""{1}"",
+    ""phone"": ""{2}"",
+    ""description"": ""CustomerID:{3}""
+    }});
+}}   ", await _customerService.GetCustomerFullNameAsync(customer),
+                    customer.Email,
+                    customer.ShippingAddressId == null
+                        ? ""
+                        : (await _customerService.GetCustomerShippingAddressAsync(customer)).PhoneNumber,
+                    customer.Id
+                );
+            }
             return model;
         }
 

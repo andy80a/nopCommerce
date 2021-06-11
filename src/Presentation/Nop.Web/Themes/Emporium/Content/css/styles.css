@@ -9750,3 +9750,7 @@ td.latest-post {
     transition: all .15s ease-in-out 0s;
     z-index: 100;
 }
+
+.bingc-powered-by {
+     display: none!important; 
+}

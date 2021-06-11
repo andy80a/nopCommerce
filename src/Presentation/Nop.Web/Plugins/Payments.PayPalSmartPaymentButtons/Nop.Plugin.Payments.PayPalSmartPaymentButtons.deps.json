@@ -530,7 +530,7 @@
       "BundlerMinifier.Core/3.2.449": {
         "dependencies": {
           "NUglify": "1.13.2",
-          "Newtonsoft.Json": "12.0.2"
+          "Newtonsoft.Json": "13.0.1"
         },
         "runtime": {
           "lib/netcoreapp3.1/dotnet-bundle.dll": {
@@ -1602,7 +1602,7 @@
       "Microsoft.AspNetCore.JsonPatch/5.0.3": {
         "dependencies": {
           "Microsoft.CSharp": "4.7.0",
-          "Newtonsoft.Json": "12.0.2"
+          "Newtonsoft.Json": "13.0.1"
         },
         "runtime": {
           "lib/netstandard2.0/Microsoft.AspNetCore.JsonPatch.dll": {
@@ -1617,7 +1617,7 @@
       "Microsoft.AspNetCore.Mvc.NewtonsoftJson/5.0.3": {
         "dependencies": {
           "Microsoft.AspNetCore.JsonPatch": "5.0.3",
-          "Newtonsoft.Json": "12.0.2",
+          "Newtonsoft.Json": "13.0.1",
           "Newtonsoft.Json.Bson": "1.0.2"
         },
         "runtime": {
@@ -2098,7 +2098,7 @@
       "MiniProfiler.Shared/4.1.0": {
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "5.0.0",
-          "Newtonsoft.Json": "12.0.2",
+          "Newtonsoft.Json": "13.0.1",
           "System.ComponentModel.Primitives": "4.3.0",
           "System.Data.Common": "4.3.0",
           "System.Diagnostics.DiagnosticSource": "4.7.1",
@@ -2200,11 +2200,11 @@
           "System.Xml.XDocument": "4.3.0"
         }
       },
-      "Newtonsoft.Json/12.0.2": {
+      "Newtonsoft.Json/13.0.1": {
         "runtime": {
           "lib/netstandard2.0/Newtonsoft.Json.dll": {
-            "assemblyVersion": "12.0.0.0",
-            "fileVersion": "12.0.2.23222"
+            "assemblyVersion": "13.0.0.0",
+            "fileVersion": "13.0.1.25517"
           }
         },
         "compile": {
@@ -2213,7 +2213,7 @@
       },
       "Newtonsoft.Json.Bson/1.0.2": {
         "dependencies": {
-          "Newtonsoft.Json": "12.0.2"
+          "Newtonsoft.Json": "13.0.1"
         },
         "runtime": {
           "lib/netstandard2.0/Newtonsoft.Json.Bson.dll": {
@@ -3727,6 +3727,17 @@
           "lib/netstandard2.0/WebMarkupMin.NUglify.dll": {}
         }
       },
+      "BinotelApi/1.0.0": {
+        "dependencies": {
+          "Newtonsoft.Json": "13.0.1"
+        },
+        "runtime": {
+          "BinotelApi.dll": {}
+        },
+        "compile": {
+          "BinotelApi.dll": {}
+        }
+      },
       "MeestExpressApi/1.0.0": {
         "dependencies": {
           "CsvHelper": "12.1.2"
@@ -3804,12 +3815,14 @@
       },
       "Nop.Web/4.4.0": {
         "dependencies": {
+          "BinotelApi": "1.0.0",
           "MeestExpressApi": "1.0.0",
           "Nop.Core": "4.4.0",
           "Nop.Data": "4.4.0",
           "Nop.Services": "4.4.0",
           "Nop.Web.Framework": "4.4.0",
           "NovaPoshtaApi": "1.0.0",
+          "RibbonInfo": "1.0.0",
           "SatApi": "1.0.0"
         },
         "runtime": {
@@ -3838,7 +3851,7 @@
       },
       "NovaPoshtaApi/1.0.0": {
         "dependencies": {
-          "Newtonsoft.Json": "12.0.2"
+          "Newtonsoft.Json": "13.0.1"
         },
         "runtime": {
           "NovaPoshtaApi.dll": {}
@@ -3847,9 +3860,17 @@
           "NovaPoshtaApi.dll": {}
         }
       },
+      "RibbonInfo/1.0.0": {
+        "runtime": {
+          "RibbonInfo.dll": {}
+        },
+        "compile": {
+          "RibbonInfo.dll": {}
+        }
+      },
       "SatApi/1.0.0": {
         "dependencies": {
-          "Newtonsoft.Json": "12.0.2"
+          "Newtonsoft.Json": "13.0.1"
         },
         "runtime": {
           "SatApi.dll": {}
@@ -6586,12 +6607,12 @@
       "path": "netstandard.library/1.6.1",
       "hashPath": "netstandard.library.1.6.1.nupkg.sha512"
     },
-    "Newtonsoft.Json/12.0.2": {
+    "Newtonsoft.Json/13.0.1": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-rTK0s2EKlfHsQsH6Yx2smvcTCeyoDNgCW7FEYyV01drPlh2T243PR2DiDXqtC5N4GDm4Ma/lkxfW5a/4793vbA==",
-      "path": "newtonsoft.json/12.0.2",
-      "hashPath": "newtonsoft.json.12.0.2.nupkg.sha512"
+      "sha512": "sha512-ppPFpBcvxdsfUonNcvITKqLl3bqxWbDCZIzDWHzjpdAHRFfZe0Dw9HmA0+za13IdyrgJwpkDTDA9fHaxOrt20A==",
+      "path": "newtonsoft.json/13.0.1",
+      "hashPath": "newtonsoft.json.13.0.1.nupkg.sha512"
     },
     "Newtonsoft.Json.Bson/1.0.2": {
       "type": "package",
@@ -7657,6 +7678,11 @@
       "path": "webmarkupmin.nuglify/2.9.2",
       "hashPath": "webmarkupmin.nuglify.2.9.2.nupkg.sha512"
     },
+    "BinotelApi/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
     "MeestExpressApi/1.0.0": {
       "type": "project",
       "serviceable": false,
@@ -7688,6 +7714,11 @@
       "sha512": ""
     },
     "NovaPoshtaApi/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "RibbonInfo/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

@@ -44,7 +44,12 @@ namespace Nop.Web.Models.Common
         public bool DisplayCustomerAddressesFooterItem { get; set; }
         public bool DisplayShoppingCartFooterItem { get; set; }
         public bool DisplayWishlistFooterItem { get; set; }
-        public bool DisplayApplyVendorAccountFooterItem { get; set; }        
+        public bool DisplayApplyVendorAccountFooterItem { get; set; }
+
+
+        public string JivositeId { get; set; }
+
+        public string JivositeUserInfo { get; set; }
 
         #region Nested classes
 

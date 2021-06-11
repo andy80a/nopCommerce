@@ -61,3 +61,17 @@ Theme colors
       UPdate [dbo].[LocaleStringResource]
   SET [ResourceValue] = 'Побажання' 
   WHERE LanguageId=4 AND [ResourceValue]='Бажання'
+  
+    UPdate [dbo].[LocaleStringResource]
+  SET [ResourceValue] = Replace([ResourceValue], 'Бюлетень', 'Підписка на новини')
+  WHERE LanguageId=4 AND [ResourceValue] like '%Бюлетень%'  
+
+
+  
+  Update [Topic]
+  set IncludeInFooterColumn3 =1, DisplayOrder=3
+  where SystemName='ConditionsOfUse'
+  
+    Update [Setting]
+  set Value=0
+  where name='displaydefaultfooteritemsettings.DisplayProductSearchFooterItem'
