@@ -507,4 +507,9 @@
 .shopping-cart-page .table-wrapper{
     width: 100%
 }
+
+.overview .countdown-description
+{
+	display:block;
+}
 }

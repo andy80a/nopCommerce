@@ -680,6 +680,16 @@ namespace Nop.Web.Factories
                         if (finalPriceWithoutDiscountBase != oldPriceBase && oldPriceBase > decimal.Zero)
                             model.OldPrice = await _priceFormatter.FormatPriceAsync(oldPrice);
 
+                        var tierPrices = new List<TierPrice>();
+                        if (product.HasTierPrices)
+                        {
+                            tierPrices.AddRange(await _productService.GetTierPricesAsync(product, await _workContext.GetCurrentCustomerAsync(), (await _storeContext.GetCurrentStoreAsync()).Id));
+                            if (tierPrices.Any())
+                            {
+                                model.SpecialPriceEndDate = tierPrices.First().EndDateTimeUtc;
+                            }
+                        }
+                      
                         model.Price = await _priceFormatter.FormatPriceAsync(finalPriceWithoutDiscount);
 
                         if (finalPriceWithoutDiscountBase != finalPriceWithDiscountBase)

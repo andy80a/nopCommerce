@@ -17,6 +17,7 @@
     //meta
     Html.AddMetaDescriptionParts(Model.MetaDescription);
     Html.AddMetaKeywordParts(Model.MetaKeywords);
+
     //page class
     Html.AppendPageCssClassParts("html-product-details-page");
 
@@ -95,7 +96,34 @@
                                     <label class="ribbon-image-text">@Model.RibbonName</label>
                                 </div>
                             </div>
-                        }       
+                        }
+                        
+                        @if (Model.ProductPrice.SpecialPriceEndDate.HasValue && Model.ProductPrice.SpecialPriceEndDate.Value > DateTime.Now)
+                        {
+                            <div class="countdown-description" >
+                                @T("Custom.EndOfSale")
+                                    <div class="countdown">
+                                    </div>
+                            </div>
+                                
+                            Html.AddScriptParts(ResourceLocation.Footer, "~/lib_npm/flipclock/flipclock.min.js");
+                            Html.AddCssFileParts("~/lib_npm/flipclock/flipclock.css");
+                            <script asp-location="Footer">
+                                var clock;
+                                var futureDate = new Date('@Model.ProductPrice.SpecialPriceEndDate.Value.ToString("o")');
+
+                                var diff = futureDate.getTime() / 1000 - new Date().getTime() / 1000;
+
+                                $(document).ready(function () {
+                                    clock = $('.countdown').FlipClock(diff, {
+                                        clockFace: 'DailyCounter',
+                                        language: '@T("Custom.LanguageCode")',
+                                        countdown: true
+                                    });
+                                });
+                            </script>
+                        }
+
 
                         @await Html.PartialAsync("_Discontinued", Model)
                         <div class="product-name">
@@ -180,23 +208,25 @@
 
                                 <div class="short-description" align="left">
                                     <p>@T("Custom.DiscountDescription")</p>
-                                    @if (true)
-                                    {
-                                        //use fancybox to how nice pop-up
-                                        Html.AddScriptParts("~/Scripts/jquery.fancybox-1.3.4.pack.js");
-                                        Html.AddCssFileParts("~/Content/fancybox/jquery.fancybox-1.3.4.css");
+
+                                    <br /><a id="10reasons" href="#" style="color: #3089CA;" onclick="return false;"><b>@T("Custom.TenReasons")</b></a>
+                                    
+                                    <script asp-location="Footer" type="text/javascript">
+
+                                        $("#10reasons").click(function () {
+                                            var url = '@Url.RouteUrl("tenreasons")';
+                                    openDialog1(url);
+                                    });
+
+                                    function openDialog1(url, caption) {
+                                    $('#dialogIframe').attr("src", url);
+                                    $("#dialog").dialog({
+                                    width: 800,
+                                    height: 480,
+                                    title: '@T("Custom.TenReasons")'
+                                    });
                                     }
-                                    <br/><a id="10reasons" href="#" style="color: #3089CA;" onclick="return false;"><b>@T("Custom.TenReasons")</b></a>
-                                    <script type="text/javascript">
-                                        $("#10reasons").fancybox({
-                                            'href': '@(Url.RouteUrl("tenreasons"))',
-                                            'speedIn': 600,
-                                            'speedOut': 200,
-                                            'width': 800,
-                                            'height': 480,
-                                            'type': 'iframe',
-                                            'centerOnScroll': true
-                                        });
+                                        
                                     </script>
                                 </div>
                             </div>
@@ -277,26 +307,25 @@
       $(document).ready(function () {
           $("#novaPoshta").click(function () {
                 var url = '@Url.RouteUrl("DeliveryPricePopup", new { productId = Model.Id, deliveryType = "novaPoshta" })';
-              openDialog(url);
+              openDialog(url, $("#novaPoshta").text());
           });
 
           $("#meest").click(function () {
                 var url = '@Url.RouteUrl("DeliveryPricePopup", new { productId = Model.Id, deliveryType = "meest" })';
-              openDialog(url);
+              openDialog(url, $("#meest").text());
           });
 
           $("#sat").click(function () {
                 var url = '@Url.RouteUrl("DeliveryPricePopup", new { productId = Model.Id, deliveryType = "sat" })';
-              openDialog(url);
+              openDialog(url, $("#sat").text());
           });
 
-          function openDialog(url) {
-                console.log(url);
+          function openDialog(url, caption) {
                 $('#dialogIframe').attr("src", url);
                 $("#dialog").dialog({
                     width: 1000,
                     height: 500,
-                    title: '@T("Custom.DeliveryPricePopupHeader")'
+                    title: '@T("Custom.DeliveryPricePopupHeader")' + caption
                 });
           }
     });

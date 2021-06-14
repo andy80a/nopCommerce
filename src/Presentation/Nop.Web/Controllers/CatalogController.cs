@@ -434,5 +434,12 @@ namespace Nop.Web.Controllers
         }
 
         #endregion
+
+        public virtual async Task<IActionResult> TenReasonsPopup()
+        {
+            var model = new BackInStockSubscribeModel();
+
+            return View(model);
+        }
     }
 }

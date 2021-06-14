@@ -57,7 +57,7 @@
     border: none;
 }
 
-@media all and (max-width: 767px) {
+@media all and (max-width: 1050px) {
     .productTabs.ui-tabs .ui-tabs-nav li {
         display: block;
         margin: 0;
@@ -70,7 +70,7 @@
     }
 }
 
-@media all and (min-width:768px) {
+@media all and (min-width:1051px) {
     .productTabs.ui-tabs .ui-tabs-panel {
         margin: 0 -20px;
     }

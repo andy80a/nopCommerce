@@ -694,9 +694,13 @@ namespace Nop.Web.Infrastructure
 
 
             endpointRouteBuilder.MapControllerRoute("DeliveryPricePopup",
-              pattern: "deliveryprice/{productId:min(0)}",
+              pattern: $"{lang}/deliveryprice/{{productId:min(0)}}",
               new { controller = "Delivery", action = "DeliveryPricePopup" });
 
+
+            endpointRouteBuilder.MapControllerRoute("TenReasons",
+                pattern: $"{lang}/TenReasonsPopup",
+                new { controller = "Catalog", action = "TenReasonsPopup" });
         }
 
         #endregion

@@ -259,5 +259,9 @@
 	width: 30px;
 }
 
+.overview .countdown-description
+{
+	display:inline-block;
+}
 
 }

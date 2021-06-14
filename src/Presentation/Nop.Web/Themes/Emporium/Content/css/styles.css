@@ -3740,6 +3740,12 @@ input + .inputs-icons {
 	color: #444444;
 	font-weight: bold;
 }
+.overview .countdown-description {
+	font-size: 16px;
+	line-height: 1.5;
+	color: #8c8c8c;
+}
+
 .overview .short-description {
 	margin: 0 0 30px;
 	padding: 0 10px;
@@ -3747,6 +3753,8 @@ input + .inputs-icons {
 	line-height: 1.5;
 	color: #8c8c8c;
 }
+
+
 .product-reviews-overview {
 	margin: 0 0 20px; /*not present in variant-overview*/
 }
@@ -3877,11 +3885,6 @@ input + .inputs-icons {
 	transition: color .2s ease;
 }
 
-
-.additional-details {
-	text-align:left;
-	
-}
 
 .overview .additional-details,
 .variant-overview .additional-details {

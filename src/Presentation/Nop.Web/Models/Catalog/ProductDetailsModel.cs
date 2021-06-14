@@ -210,6 +210,8 @@ namespace Nop.Web.Models.Catalog
             public bool IsRental { get; set; }
             public string RentalPrice { get; set; }
 
+            public DateTime? SpecialPriceEndDate { get; set; }
+
             /// <summary>
             /// A value indicating whether we should display tax/shipping info (used in Germany)
             /// </summary>

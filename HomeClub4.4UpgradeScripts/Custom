@@ -1,6 +1,6 @@
 Theme colors 
 3089CA, 61C2EE
-
+темний   світлий
 
 1  включити shipping by weight
 
@@ -108,3 +108,7 @@ Theme colors
       UPdate [dbo].[LocaleStringResource]
   SET [ResourceValue] = 'Фільтри' 
   WHERE LanguageId=4 AND ResourceName='SevenSpikes.Themes.Common.Filters'
+  
+    Update Category
+  set IncludeInTopMenu =1
+  where id < 14820

@@ -1,0 +1,13 @@
+﻿@model BackInStockSubscribeModel
+@using Nop.Web.Models.Catalog;
+@{
+    /*pop-up windows*/
+    Layout = "_Root.Head";
+}
+<div class="page back-in-stock-subscription-page">
+    <div class="page-body">
+        @await Component.InvokeAsync("TopicBlock", new { systemName = "TenReasons" })
+    </div>
+</div>
+
+
