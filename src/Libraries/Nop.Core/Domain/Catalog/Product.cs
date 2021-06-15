@@ -528,6 +528,8 @@ namespace Nop.Core.Domain.Catalog
         public int? AvailabilityInLvivExpectation { get; set; }
         public int ForecastInPoland { get; set; }
 
+        public int SoldCount { get; set; }
+
         public string Ribbons { get; set; }
 
         public int MaxLength { get; set; }

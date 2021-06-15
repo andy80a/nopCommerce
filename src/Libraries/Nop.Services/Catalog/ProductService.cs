@@ -4,6 +4,7 @@ using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
 using LinqToDB.Data;
+using MailKit.Search;
 using Nop.Core;
 using Nop.Core.Caching;
 using Nop.Core.Domain.Catalog;
@@ -630,12 +631,16 @@ namespace Nop.Services.Catalog
             var customerRoleIds = await _customerService.GetCustomerRoleIdsAsync(customer);
             var cacheKey = _staticCacheManager.PrepareKeyForDefaultCache(NopCatalogDefaults.CategoryFeaturedProductsIdsKey, categoryId, customerRoleIds, storeId);
 
+            var categoryIds2 = new List<int> { categoryId };
+            categoryIds2.AddRange(await _categoryService.GetChildCategoryIdsAsync(categoryId));
+
             var featuredProductIds = await _staticCacheManager.GetAsync(cacheKey, async () =>
             {
                 var query = from p in _productRepository.Table
                             join pc in _productCategoryRepository.Table on p.Id equals pc.ProductId
                             where p.Published && !p.Deleted && p.VisibleIndividually &&
-                                pc.IsFeaturedProduct && categoryId == pc.CategoryId
+                                p.AvailabilityInLviv > 0 && (categoryIds2.Contains(pc.CategoryId))
+                            orderby p.SoldCount descending
                             select p;
 
                 //apply store mapping constraints
@@ -646,7 +651,7 @@ namespace Nop.Services.Catalog
 
                 featuredProducts = query.ToList();
 
-                return featuredProducts.Select(p => p.Id).ToList();
+                return featuredProducts.Select(p => p.Id).Distinct().ToList();
             });
 
             if (featuredProducts.Count == 0 && featuredProductIds.Count > 0)

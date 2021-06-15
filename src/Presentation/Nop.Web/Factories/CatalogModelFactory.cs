@@ -459,7 +459,10 @@ namespace Nop.Web.Factories
                 }).ToListAsync();
 
             //featured products
-            if (!_catalogSettings.IgnoreFeaturedProducts)
+            if (!_catalogSettings.IgnoreFeaturedProducts && category.Id != 14820
+                                                         && category.Id != 13917
+                                                         && category.Id != 13449 //design
+                                                         && category.ParentCategoryId != 13449)
             {
                 var featuredProducts = await _productService.GetCategoryFeaturedProductsAsync(category.Id, currentStore.Id);
                 if (featuredProducts != null)
