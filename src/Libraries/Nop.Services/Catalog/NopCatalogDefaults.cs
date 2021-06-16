@@ -52,7 +52,7 @@ namespace Nop.Services.Catalog
         /// {2} : current customer ID
         /// {3} : store ID
         /// </remarks>
-        public static CacheKey CategoriesByParentCategoryCacheKey => new CacheKey("Nop.category.byparent.{0}-{1}-{2}-{3}", CategoriesByParentCategoryPrefix);
+        public static CacheKey CategoriesByParentCategoryCacheKey => new CacheKey("Nop.category.byparent.{0}-{1}", CategoriesByParentCategoryPrefix);
 
         /// <summary>
         /// Gets a key pattern to clear cache
@@ -71,7 +71,7 @@ namespace Nop.Services.Catalog
         /// {2} : current store ID
         /// {3} : show hidden records?
         /// </remarks>
-        public static CacheKey CategoriesChildIdsCacheKey => new CacheKey("Nop.category.childids.{0}-{1}-{2}-{3}", CategoriesChildIdsPrefix);
+        public static CacheKey CategoriesChildIdsCacheKey => new CacheKey("Nop.category.childids.{0}-{1}", CategoriesChildIdsPrefix);
 
         /// <summary>
         /// Gets a key pattern to clear cache

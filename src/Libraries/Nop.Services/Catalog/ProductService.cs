@@ -633,6 +633,10 @@ namespace Nop.Services.Catalog
 
             var categoryIds2 = new List<int> { categoryId };
             categoryIds2.AddRange(await _categoryService.GetChildCategoryIdsAsync(categoryId));
+            if (categoryIds2.Count == 1) //no child
+            {
+                return featuredProducts;
+            }
 
             var featuredProductIds = await _staticCacheManager.GetAsync(cacheKey, async () =>
             {

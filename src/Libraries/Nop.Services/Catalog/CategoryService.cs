@@ -35,6 +35,9 @@ namespace Nop.Services.Catalog
         private readonly IStoreMappingService _storeMappingService;
         private readonly IWorkContext _workContext;
 
+        private object lockObj = new object();
+        public static Dictionary<int, List<Category>> CategoriesList;
+
         #endregion
 
         #region Ctor
@@ -271,6 +274,46 @@ namespace Nop.Services.Catalog
             return new PagedList<Category>(sortedCategories, pageIndex, pageSize);
         }
 
+        private void FillCategoriesList(IQueryable<Category> table)
+        {
+            lock (lockObj)
+            {
+                if (CategoriesList == null)
+                {
+                    try
+                    {
+                        var categories =
+                            table.Where(c => !c.Deleted).OrderBy(x => x.DisplayOrder).ThenBy(c => c.Id).ToList();
+                        var res = new Dictionary<int, List<Category>>();
+                        res.Add(0, new List<Category>());
+                        foreach (var category in categories)
+                        {
+                            res.Add(category.Id, new List<Category>());
+                        }
+
+                        foreach (var category in categories)
+                        {
+                            List<Category> catList;
+
+                            if (res.TryGetValue(category.ParentCategoryId, out catList))
+                            {
+                                catList.Add(category);
+                            }
+                        }
+                        CategoriesList = res;
+                        //foreach (var item in CategoriesList.Values)
+                        //{
+                        //    item.OrderBy(c => c.DisplayOrder);
+                        //}
+                    }
+                    catch
+                    {
+                        CategoriesList = null;
+                    }
+                }
+            }
+        }
+
         /// <summary>
         /// Gets all categories filtered by parent category identifier
         /// </summary>
@@ -283,6 +326,26 @@ namespace Nop.Services.Catalog
         public virtual async Task<IList<Category>> GetAllCategoriesByParentCategoryIdAsync(int parentCategoryId,
             bool showHidden = false)
         {
+
+            var cacheKey = _staticCacheManager.PrepareKeyForDefaultCache(
+                NopCatalogDefaults.CategoriesByParentCategoryCacheKey,
+                parentCategoryId, showHidden);
+            var result = await _staticCacheManager.GetAsync(cacheKey, async () =>
+            {
+                if (CategoriesList == null)
+                {
+                    FillCategoriesList(_categoryRepository.Table);
+                }
+                
+                var query = CategoriesList[parentCategoryId];
+                if (!showHidden)
+                    query = query.Where(c => c.Published).ToList();
+
+                return query;
+            });
+            return result;
+
+            /*
             var store = await _storeContext.GetCurrentStoreAsync();
             var customer = await _workContext.GetCurrentCustomerAsync();
             var categories = await _categoryRepository.GetAllAsync(async query =>
@@ -302,9 +365,10 @@ namespace Nop.Services.Catalog
 
                 return query.OrderBy(c => c.DisplayOrder).ThenBy(c => c.Id);
             }, cache => cache.PrepareKeyForDefaultCache(NopCatalogDefaults.CategoriesByParentCategoryCacheKey,
-                parentCategoryId, showHidden, customer, store));
+                parentCategoryId, showHidden));
 
             return categories;
+            */
         }
 
         /// <summary>
@@ -396,23 +460,14 @@ namespace Nop.Services.Catalog
         {
             var cacheKey = _staticCacheManager.PrepareKeyForDefaultCache(NopCatalogDefaults.CategoriesChildIdsCacheKey,
                 parentCategoryId,
-                await _customerService.GetCustomerRoleIdsAsync(await _workContext.GetCurrentCustomerAsync()),
-                storeId,
-                showHidden);
+               showHidden);
 
             return await _staticCacheManager.GetAsync(cacheKey, async () =>
             {
-                //little hack for performance optimization
-                //there's no need to invoke "GetAllCategoriesByParentCategoryId" multiple times (extra SQL commands) to load childs
-                //so we load all categories at once (we know they are cached) and process them server-side
                 var categoriesIds = new List<int>();
-                var categories = (await GetAllCategoriesAsync(storeId: storeId, showHidden: showHidden))
-                    .Where(c => c.ParentCategoryId == parentCategoryId)
-                    .Select(c => c.Id)
-                    .ToList();
+                var categories = (await GetAllCategoriesByParentCategoryIdAsync(parentCategoryId, showHidden)).Select(x =>x.Id);
                 categoriesIds.AddRange(categories);
                 categoriesIds.AddRange(await categories.SelectManyAwait(async cId => await GetChildCategoryIdsAsync(cId, storeId, showHidden)).ToListAsync());
-
                 return categoriesIds;
             });
         }
