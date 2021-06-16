@@ -112,3 +112,17 @@ Theme colors
     Update Category
   set IncludeInTopMenu =1
   where id < 14820
+  
+  			      UPDATE u
+            SET u.DisplayOrder = s.Order1
+            FROM Product u
+               inner join
+            (SELECT ROW_NUMBER()
+
+                   OVER(ORDER BY P.SoldCount DESC, P.Name) AS Order1,
+               p.ID
+            FROM Product p 
+            ) s
+            ON
+              u.id = s.id
+  
