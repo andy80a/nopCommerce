@@ -64,6 +64,7 @@ namespace Nop.Web.Factories
         private readonly OrderSettings _orderSettings;
         private readonly PaymentSettings _paymentSettings;
         private readonly RewardPointsSettings _rewardPointsSettings;
+        private readonly IProductService _productService;
         private readonly ShippingSettings _shippingSettings;
 
         #endregion
@@ -99,6 +100,7 @@ namespace Nop.Web.Factories
             OrderSettings orderSettings,
             PaymentSettings paymentSettings,
             RewardPointsSettings rewardPointsSettings,
+            IProductService productService,
             ShippingSettings shippingSettings)
         {
             _dataProvider = dataProvider;
@@ -129,6 +131,7 @@ namespace Nop.Web.Factories
             _orderSettings = orderSettings;
             _paymentSettings = paymentSettings;
             _rewardPointsSettings = rewardPointsSettings;
+            _productService = productService;
             _shippingSettings = shippingSettings;
         }
 
@@ -1105,7 +1108,7 @@ namespace Nop.Web.Factories
 
             city = warehouse.City;
             address = warehouse.Address;
-            return (false, city, address);
+            return (true, city, address);
         }
 
         public async Task<(bool result, string city, string address)> GetNovaPoshtaCityAndAddressStreet(int streetId)
@@ -1147,7 +1150,7 @@ namespace Nop.Web.Factories
 
             city = street.City;
             address = street.Name;
-            return (false, city, address);
+            return (true, city, address);
         }
         //SAT
         public async Task<(bool result, string city, string address)> GetSATCityAndAddressWarehouse(int warehouseId)
@@ -1179,7 +1182,7 @@ namespace Nop.Web.Factories
             {
                 await _genericAttributeService.SaveAttributeAsync(currentCustomer, NopCustomerDefaults.SATCityId, warehouse.CityId);
             }
-            return (false, city, address);
+            return (true, city, address);
         }
 
         public async Task<(bool result, string city, string address)> GetSATCityAndAddressStreet(int streetId)
@@ -1214,7 +1217,7 @@ SELECT
 
             city = street.City;
             address = street.Name;
-            return (false, city, address);
+            return (true, city, address);
         }
 
         //meest
@@ -1245,7 +1248,7 @@ SELECT
 
             city = warehouse.City;
             address = warehouse.Address;
-            return (false, city, address);
+            return (true, city, address);
         }
 
         public async Task<(bool result, string city, string address)> GetMeestCityAndAddressStreet(int streetId)
@@ -1276,7 +1279,7 @@ SELECT
 
             city = street.City;
             address = street.Name;
-            return (false, city, address);
+            return (true, city, address);
         }
 
         public async Task<(AddressType type, int weight)> GetNovaPoshtaStatus()
@@ -1296,27 +1299,29 @@ SELECT
                 selectedShippingOption.Name.ToLower().Contains("ідділення") ||
             selectedShippingOption.Name.ToLower().Contains("тделение"))
             {
-                //int maxLength = 0;
-                //decimal totalWeight = 0;
+                int maxLength = 0;
+                decimal totalWeight = 0;
 
-                foreach (var item in cart)
+                foreach (ShoppingCartItem item in cart)
                 {
-                    //totalWeight = totalWeight + Math.Max(item.Product.Weight, item.Product.VolumeWeight) * item.Quantity;
-                    //maxLength = Math.Max(maxLength, item.Product.MaxLength);
+                    var product = await _productService.GetProductByIdAsync(item.ProductId);
+
+                    totalWeight = totalWeight + Math.Max(product.Weight, product.VolumeWeight) * item.Quantity;
+                    maxLength = Math.Max(maxLength, product.MaxLength);
                 }
 
-                //if (totalWeight > 1000)
-                //{
-                //    totalWeight = 999;
-                //}
-                //weight = (int)totalWeight;
+                if (totalWeight > 1000)
+                {
+                    totalWeight = 999;
+                }
+                weight = (int)totalWeight;
                 if (selectedShippingOption.Name.ToLower().Contains("нова"))
                 {
                     addressType = AddressType.NovaPoshtaWarehouse;
-                    //if (maxLength > 120)
-                    //{
-                    //    weight = (int)Math.Max(totalWeight, 31);
-                    //}
+                    if (maxLength > 120)
+                    {
+                        weight = (int)Math.Max(totalWeight, 31);
+                    }
                 }
                 else if (selectedShippingOption.Name.ToLower().Contains("кспр"))
                 {

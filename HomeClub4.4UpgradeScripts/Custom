@@ -126,3 +126,19 @@ Theme colors
             ON
               u.id = s.id
   
+  Update [dbo].[LocaleStringResource]
+  SET ResourceValue='{0}'
+  where ResourceName='Checkout.SelectShippingMethod.MethodAndFee'
+  
+    INsert into [LocaleStringResource] ([LanguageId], [ResourceName], [ResourceValue])
+  Values (2,'Address.Fields.Building',  'Дом')
+
+    INsert into LocaleStringResource ([LanguageId], [ResourceName], [ResourceValue])
+  Values (4,'Address.Fields.Building', 'Будинок')
+
+
+  INsert into [LocaleStringResource] ([LanguageId], [ResourceName], [ResourceValue])
+  Values (2,'Address.Fields.Apartment',  'Квартира')
+
+    INsert into LocaleStringResource ([LanguageId], [ResourceName], [ResourceValue])
+  Values (4,'Address.Fields.Apartment', 'Квартира')

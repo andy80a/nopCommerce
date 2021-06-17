@@ -614,6 +614,35 @@ namespace Nop.Web.Controllers
             return RedirectToRoute("CheckoutPaymentMethod");
         }
 
+        public virtual async Task<IActionResult> ShippingAddress()
+        {
+            //validation
+            if (_orderSettings.CheckoutDisabled)
+                return RedirectToRoute("ShoppingCart");
+
+            var cart = await _shoppingCartService.GetShoppingCartAsync(await _workContext.GetCurrentCustomerAsync(), ShoppingCartType.ShoppingCart, (await _storeContext.GetCurrentStoreAsync()).Id);
+
+            if (!cart.Any())
+                return RedirectToRoute("ShoppingCart");
+
+            if (_orderSettings.OnePageCheckoutEnabled)
+                return RedirectToRoute("CheckoutOnePage");
+
+            if (await _customerService.IsGuestAsync(await _workContext.GetCurrentCustomerAsync()) && !_orderSettings.AnonymousCheckoutAllowed)
+                return Challenge();
+
+            if (!await _shoppingCartService.ShoppingCartRequiresShippingAsync(cart))
+                return RedirectToRoute("CheckoutShippingMethod");
+
+            int weight;
+            AddressType addressType;
+            (addressType, weight) = await _checkoutModelFactory.GetNovaPoshtaStatus();
+            var model = await _checkoutModelFactory.PrepareShippingAddressModelAsync(addressType, weight, 0, 0, cart, prePopulateNewAddressWithCustomerFields: true);
+
+
+            return View(model);
+        }
+
         [HttpPost, ActionName("ShippingAddress")]
         [FormValueRequired("nextstep")]
         public virtual async Task<IActionResult> NewShippingAddress(CheckoutShippingAddressModel model, IFormCollection form)

@@ -140,27 +140,61 @@
                                         }
                                     </ul>
                                     <div class="select-button">
-                                        <button type="button" class="button-1 select-shipping-address-button" onclick="setLocation('@Url.RouteUrl("CheckoutSelectShippingAddress", new {addressid = item.Id})')">@T("Checkout.ShipToThisAddress")</button>
+                                        <input type="button" value="@T("Checkout.ShipToThisAddress")" class="button-1 select-shipping-address-button" onclick="setLocation('@Url.RouteUrl("CheckoutSelectShippingAddress", new {addressid = item.Id})') " />
                                     </div>
                                 </div>
                             }
                             <div class="add-button">
-                                <div class="btn-holder">
+                                @*<div class="btn-holder">
                                     <label class="button-1 open-address-form"><span>@T("Common.AddNew")</span></label>
                                     <label class="button-2 close-address-form"><span>@T("SevenSpikes.Themes.Emporium.Common.Close")</span></label>
-                                </div>
-                                <div asp-validation-summary="ModelOnly" class="message-error"></div>
-                                <div class="enter-address">
+                                </div>*@
+                                <div class="enter-address" style="display:block !important">
+                                    <div asp-validation-summary="All" class="message-error"></div>
                                     @{
                                         var dataDictAddress = new ViewDataDictionary(ViewData);
                                         dataDictAddress.TemplateInfo.HtmlFieldPrefix = "ShippingNewAddress";
-                                        @await Html.PartialAsync("_CreateOrUpdateAddress", Model.ShippingNewAddress, dataDictAddress)
+                                        
+                                        //@await Html.PartialAsync("_CreateOrUpdateAddress", Model.ShippingNewAddress, dataDictAddress)
+
+                                        if (Model.Type == CheckoutBillingAddressModel.AddressType.NovaPoshtaWarehouse)
+                                        {
+                                            @Html.Partial("_CreateOrUpdateAddressNovaPoshtaWarehouse", Model.ShippingNewAddress, dataDictAddress)
+                                        }
+                                        else if (Model.Type == CheckoutBillingAddressModel.AddressType.NovaPoshtaAddress)
+                                        {
+                                            @Html.Partial("_CreateOrUpdateAddressNovaPoshtaAddress", Model.ShippingNewAddress, dataDictAddress)
+                                        }
+                                        else if (Model.Type == CheckoutBillingAddressModel.AddressType.SATWarehouse)
+                                        {
+                                            @Html.Partial("_CreateOrUpdateAddressSATWarehouse", Model.ShippingNewAddress, dataDictAddress)
+                                        }
+                                        else if (Model.Type == CheckoutBillingAddressModel.AddressType.SATAddress)
+                                        {
+                                            @Html.Partial("_CreateOrUpdateAddressSatAddress", Model.ShippingNewAddress, dataDictAddress)
+                                        }
+                                        else if (Model.Type == CheckoutBillingAddressModel.AddressType.MeestWarehouse)
+                                        {
+                                            @Html.Partial("_CreateOrUpdateAddressMeestWarehouse", Model.ShippingNewAddress, dataDictAddress)
+                                        }
+                                        else if (Model.Type == CheckoutBillingAddressModel.AddressType.MeestAddress)
+                                        {
+                                            @Html.Partial("_CreateOrUpdateAddressMeestAddress", Model.ShippingNewAddress, dataDictAddress)
+                                        }
+                                        else
+                                        {
+                                            @Html.Partial("_CreateOrUpdateAddress", Model.ShippingNewAddress, dataDictAddress)
+                                        }
+
+
+
                                     }
                                     <div class="buttons">
                                         <input type="submit" name="nextstep" value="@T("Checkout.NextButton")" class="button-1 new-address-next-step-button" />
                                     </div>
                                 </div>
                             </div>
+                            
                         </div>
                     </div>
                     @await Component.InvokeAsync("Widget", new { widgetZone = PublicWidgetZones.CheckoutShippingAddressMiddle })
@@ -188,7 +222,7 @@
                 </div>
             }
             @*<div class="buttons">
-                <button type="submit" name="nextstep" class="button-1 new-address-next-step-button">@T("Checkout.NextButton")</button>
+                <input type="submit" name="nextstep" value="@T("Checkout.NextButton")" class="button-1 new-address-next-step-button" />
             </div>*@
         </form>
         <div class="section order-summary">
