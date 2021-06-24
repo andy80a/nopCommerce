@@ -290,7 +290,7 @@
                                     Length = Model.PageSize,
                                     LengthMenu = Model.AvailablePageSizes,
                                     FooterCallback = !Model.IsLoggedInAsVendor ? "ordersfootercallback" : null,
-                                    FooterColumns = !Model.IsLoggedInAsVendor ? 11 : 0,
+                                    FooterColumns = !Model.IsLoggedInAsVendor & Model.ShowGrandtotal ? 11 : 0,
                                     Filters = new List<FilterParameter>
                                                         {
                                         new FilterParameter(nameof(Model.StartDate), typeof(DateTime?)),

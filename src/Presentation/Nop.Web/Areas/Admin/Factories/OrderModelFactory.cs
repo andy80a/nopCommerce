@@ -955,6 +955,9 @@ namespace Nop.Web.Areas.Admin.Factories
 
             searchModel.HideStoresList = _catalogSettings.IgnoreStoreLimitations || searchModel.AvailableStores.SelectionIsNotPossible();
 
+            var currentCustomer = await _workContext.GetCurrentCustomerAsync();
+            searchModel.ShowGrandtotal = currentCustomer.Id == 1;
+
             return searchModel;
         }
 
