@@ -290,7 +290,7 @@
                                     Length = Model.PageSize,
                                     LengthMenu = Model.AvailablePageSizes,
                                     FooterCallback = !Model.IsLoggedInAsVendor ? "ordersfootercallback" : null,
-                                    FooterColumns = !Model.IsLoggedInAsVendor ? 10 : 0,
+                                    FooterColumns = !Model.IsLoggedInAsVendor ? 11 : 0,
                                     Filters = new List<FilterParameter>
                                                         {
                                         new FilterParameter(nameof(Model.StartDate), typeof(DateTime?)),
@@ -323,6 +323,11 @@
                                     {
                                         Title = T("Admin.Orders.Fields.CustomOrderNumber").Text,
                                         Width = "80"
+                                    },
+                                    new ColumnProperty(nameof(OrderModel.IsAllLviv))
+                                    {
+                                        Title = "Ная",
+                                        Width = "5"
                                     }
                                 };
                                 //a vendor does not have access to this functionality
@@ -382,7 +387,7 @@
                                     ClassName = NopColumnClassDefaults.Button,
                                     Render = new RenderButtonView(new DataUrl("Edit"))
                                 });
-                                var orderSummaryColumnNumber = 8;
+                                var orderSummaryColumnNumber = 9;
                             }
 
                             @await Html.PartialAsync("Table", gridModel)
