@@ -599,8 +599,8 @@ namespace Nop.Web.Areas.Admin.Factories
 
             model.IsAllLviv = order.IsAllLviv;
             var currentCustomer = await _workContext.GetCurrentCustomerAsync();
-            model.AllowEditLvQuantity = true;
-            model.ShowPriceInfo = true;
+            model.AllowEditLvQuantity = currentCustomer.Id == 1;
+            model.ShowPriceInfo = currentCustomer.Id == 1;
         }
 
         /// <summary>
