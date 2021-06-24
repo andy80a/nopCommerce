@@ -252,7 +252,6 @@ namespace Nop.Web.Areas.Admin.Factories
                     SubTotalExclTaxValue = orderItem.PriceExclTax,
                     AttributeInfo = orderItem.AttributeDescription,
 
-                    // TODO: Localization?
                     ProductShortDescription = product.ShortDescription,
                     AvailabilityInLvivExpectation = product.AvailabilityInLvivExpectation == null ? "" : product.AvailabilityInLvivExpectation.ToString(),
                     AvailabilityInKrakow = product.AvailabilityInKrakow,
@@ -596,11 +595,6 @@ namespace Nop.Web.Areas.Admin.Factories
 
             //recurring payment record
             model.RecurringPaymentId = (await _orderService.SearchRecurringPaymentsAsync(initialOrderId: order.Id, showHidden: true)).FirstOrDefault()?.Id ?? 0;
-
-            model.IsAllLviv = order.IsAllLviv;
-            var currentCustomer = await _workContext.GetCurrentCustomerAsync();
-            model.AllowEditLvQuantity = currentCustomer.Id == 1;
-            model.ShowPriceInfo = currentCustomer.Id == 1;
         }
 
         /// <summary>
@@ -1184,6 +1178,8 @@ namespace Nop.Web.Areas.Admin.Factories
                 //prepare nested search model
                 PrepareOrderShipmentSearchModel(model.OrderShipmentSearchModel, order);
                 PrepareOrderNoteSearchModel(model.OrderNoteSearchModel, order);
+
+                await PrepareExtraModelFieldsAsync(model, order);
             }
 
             model.IsLoggedInAsVendor = await _workContext.GetCurrentVendorAsync() != null;
@@ -1946,6 +1942,38 @@ namespace Nop.Web.Areas.Admin.Factories
             return model;
         }
 
+        private async Task PrepareExtraModelFieldsAsync(OrderModel model, Order order)
+        {
+            model.IsAllLviv = order.IsAllLviv;
+            var currentCustomer = await _workContext.GetCurrentCustomerAsync();
+            model.AllowEditLvQuantity = currentCustomer.Id == 1;
+            model.ShowPriceInfo = currentCustomer.Id == 1;
+
+            decimal totalPricePl = 0;
+            decimal totalWeight = 0;
+            decimal totalPriceRate2 = 0;
+
+            //get order items
+            var orderItems = await _orderService.GetOrderItemsAsync(order.Id, vendorId: (await _workContext.GetCurrentVendorAsync())?.Id ?? 0);
+            foreach (var orderItem in orderItems)
+            {
+                var product = await _productService.GetProductByIdAsync(orderItem.ProductId);
+                totalPricePl = totalPricePl + (product.PricePl ?? 0) * orderItem.Quantity;
+                totalWeight = totalWeight + product.Weight * orderItem.Quantity;
+                totalPriceRate2 += (product.PricePl ?? 0) * orderItem.Quantity * product.PriceRate2;
+            }
+
+            model.OrderKgPrice = (totalPricePl / totalWeight).ToString("F2");
+            model.OrderTotalWeight = totalWeight.ToString("F2");
+            if (totalPricePl > 0)
+            {
+                model.ImportDuty = (totalPriceRate2 / totalPricePl).ToString("F3");
+            }
+            else
+            {
+                model.ImportDuty = "невідомо";
+            }
+        }
         #endregion
     }
 }

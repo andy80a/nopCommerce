@@ -243,7 +243,9 @@ namespace Nop.Web.Areas.Admin.Models.Orders
         public bool AllowEditLvQuantity { get; set; }
         public bool IsAllLviv { get; set; }
         public bool ShowPriceInfo { get; set; }
-
+        public string OrderKgPrice { get; set; }
+        public string OrderTotalWeight { get; set; }
+        public string ImportDuty { get; set; }
         #endregion
 
         #region Nested Classes
