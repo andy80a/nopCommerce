@@ -240,6 +240,9 @@ namespace Nop.Web.Areas.Admin.Models.Orders
         public OrderShipmentSearchModel OrderShipmentSearchModel { get; set; }
 
         public OrderNoteSearchModel OrderNoteSearchModel { get; set; }
+        public bool AllowEditLvQuantity { get; set; }
+        public bool IsAllLviv { get; set; }
+        public bool ShowPriceInfo { get; set; }
 
         #endregion
 

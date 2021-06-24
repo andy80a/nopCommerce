@@ -537,6 +537,9 @@ namespace Nop.Core.Domain.Catalog
         public decimal PriceRate { get; set; }
         public decimal PriceRate2 { get; set; }
         public bool DescriptionIsReviewed { get; set; }
+        public decimal? CostUa { get; set; }
+        public decimal? PriceUa { get; set; }
+        public decimal? PricePl { get; set; }
         
         /// <summary>
         /// Gets or sets a display order.

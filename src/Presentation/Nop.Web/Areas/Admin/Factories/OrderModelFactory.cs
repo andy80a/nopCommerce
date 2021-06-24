@@ -250,8 +250,26 @@ namespace Nop.Web.Areas.Admin.Factories
                     DiscountExclTaxValue = orderItem.DiscountAmountExclTax,
                     SubTotalInclTaxValue = orderItem.PriceInclTax,
                     SubTotalExclTaxValue = orderItem.PriceExclTax,
-                    AttributeInfo = orderItem.AttributeDescription
+                    AttributeInfo = orderItem.AttributeDescription,
+
+                    // TODO: Localization?
+                    ProductShortDescription = product.ShortDescription,
+                    AvailabilityInLvivExpectation = product.AvailabilityInLvivExpectation == null ? "" : product.AvailabilityInLvivExpectation.ToString(),
+                    AvailabilityInKrakow = product.AvailabilityInKrakow,
+                    PricePl = product.CostUa ?? 0,
+                    PriceRate = (double)product.PriceRate2,
+                    AvailabilityInKyiv = product.AvailabilityInKyiv,
+                    AvailabilityInLublin = product.AvailabilityInLublin2,
+                    AvailabilityInLviv = await product.GetLvivStockQuantityAsync(),
+                    ForecastInPoland = product.ForecastInPoland
                 };
+
+                if ((product.PriceUa ?? 0) > 0)
+                {
+                    orderItemModel.PriceUa = (double)(product.PriceUa ?? 0) + (product.PriceUa.HasValue ? (double)product.Weight * 2 : 0);
+                }
+                orderItemModel.KgPriceValue = (product.PricePl ?? 0) / (product.Weight == 0 ? (decimal)0.01 : product.Weight);
+                orderItemModel.KgPrice = orderItemModel.KgPriceValue.ToString("F2");
 
                 //fill in additional values (not existing in the entity)
                 orderItemModel.Sku = await _productService.FormatSkuAsync(product, orderItem.AttributesXml);
@@ -578,6 +596,11 @@ namespace Nop.Web.Areas.Admin.Factories
 
             //recurring payment record
             model.RecurringPaymentId = (await _orderService.SearchRecurringPaymentsAsync(initialOrderId: order.Id, showHidden: true)).FirstOrDefault()?.Id ?? 0;
+
+            model.IsAllLviv = order.IsAllLviv;
+            var currentCustomer = await _workContext.GetCurrentCustomerAsync();
+            model.AllowEditLvQuantity = true;
+            model.ShowPriceInfo = true;
         }
 
         /// <summary>
@@ -1004,6 +1027,7 @@ namespace Nop.Web.Areas.Admin.Factories
                         CustomerEmail = billingAddress.Email,
                         CustomerFullName = $"{billingAddress.FirstName} {billingAddress.LastName}",
                         CustomerId = order.CustomerId,
+                        IsAllLviv = order.IsAllLviv,
                         CustomOrderNumber = order.CustomOrderNumber
                     };
 

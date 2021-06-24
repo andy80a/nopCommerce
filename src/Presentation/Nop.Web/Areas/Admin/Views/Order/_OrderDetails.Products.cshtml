@@ -2,6 +2,7 @@
 
 @using Nop.Core.Domain.Tax;
 @using Nop.Core.Domain.Catalog;
+@using System.Globalization
 
 <div class="card-body">
     <div class="form-group row">
@@ -19,6 +20,9 @@
                         if (editMode) {
                             $('#pnlEditPvUnitPrice@(item.Id)').showElement();
                             $('#pnlEditPvQuantity@(item.Id)').showElement();
+                            @if (Model.AllowEditLvQuantity) {
+                                <text>$('#pnlEditLvQuantity@(item.Id)').showElement();</text>
+                            }
                             $('#pnlEditPvDiscount@(item.Id)').showElement();
                             $('#pnlEditPvPrice@(item.Id)').showElement();
                             $('#btnEditOrderItem@(item.Id)').hideElement();
@@ -28,6 +32,7 @@
                         } else {
                             $('#pnlEditPvUnitPrice@(item.Id)').hideElement();
                             $('#pnlEditPvQuantity@(item.Id)').hideElement();
+                            $('#pnlEditLvQuantity@(item.Id)').hideElement();
                             $('#pnlEditPvDiscount@(item.Id)').hideElement();
                             $('#pnlEditPvPrice@(item.Id)').hideElement();
                             $('#btnEditOrderItem@(item.Id)').showElement();
@@ -50,7 +55,7 @@
                 <col />
                 <col />
                 <col />
-                @if (!Model.IsLoggedInAsVendor)
+                @if (!Model.IsLoggedInAsVendor && !Model.IsAllLviv)
                 {
                     <col />
                 }
@@ -58,6 +63,9 @@
             <tr>
                 <th>
                     @T("Admin.Orders.Products.Picture")
+                </th>
+                <th>
+                    zl/kg
                 </th>
                 <th>
                     @T("Admin.Orders.Products.ProductName")
@@ -75,12 +83,41 @@
                     @T("Admin.Orders.Products.Quantity")
                 </th>
                 <th>
-                    @T("Admin.Orders.Products.Discount")
-                </th>
-                <th>
                     @T("Admin.Orders.Products.Total")
                 </th>
-                @if (!Model.IsLoggedInAsVendor)
+                @if (Model.ShowPriceInfo)
+                {
+                    <th align="center">
+                        Коеф
+                    </th>
+
+                    <th align="center">
+                        Ціна PL
+                    </th>
+                    <th align="center">
+                        Ціна Ua
+                    </th>
+                }
+
+                <th align="center">
+                    Ки
+                </th>
+                <th align="center">
+                    Кр
+                </th>
+                <th align="center">
+                    Лю
+                </th>
+                <th align="center">
+                    Про
+                </th>
+                <th align="center">
+                    Льв
+                </th>
+                <th align="center">
+                    ЛЗал
+                </th>
+                @if (!Model.IsLoggedInAsVendor && !Model.IsAllLviv)
                 {
                     <th>
                         @T("Admin.Common.Edit")
@@ -95,8 +132,13 @@
                         <td class="text-center">
                             <img src="@item.PictureThumbnailUrl" alt="" title=""/>
                         </td>
+                        <td>
+                            @Html.Raw(item.KgPrice)
+                        </td>
                         <td style="width: 15%;" class="text-left">
                             <em><a asp-controller="Product" asp-action="Edit" asp-route-id="@item.ProductId">@item.ProductName</a></em>
+                            <br />
+                            @item.ProductShortDescription
                             @if (!string.IsNullOrEmpty(item.AttributeInfo))
                             {
                                 <p>
@@ -255,49 +297,6 @@
                         <td style="width: 15%;" class="text-center">
                             @if (Model.AllowCustomersToSelectTaxDisplayType)
                             {
-                                <div>@Html.Raw(item.DiscountInclTax)</div>
-                                <div>@Html.Raw(item.DiscountExclTax)</div>
-                            }
-                            else
-                            {
-                                switch (Model.TaxDisplayType)
-                                {
-                                    case TaxDisplayType.ExcludingTax:
-                                        {
-                                        @Html.Raw(item.DiscountExclTax)
-                                    }
-                                        break;
-                                    case TaxDisplayType.IncludingTax:
-                                    {
-                                        @Html.Raw(item.DiscountInclTax)
-                                    }
-                                        break;
-                                    default:
-                                        break;
-                                }
-                            }
-                            <div id="pnlEditPvDiscount@(item.Id)">
-                                <div class="form-group row">
-                                    <div class="col-md-5">
-                                        @T("Admin.Orders.Products.Edit.InclTax")
-                                    </div>
-                                    <div class="col-md-7">
-                                        <input name="pvDiscountInclTax@(item.Id)" type="text" value="@item.DiscountInclTaxValue" id="pvDiscountInclTax@(item.Id)" class="form-control input-sm"/>
-                                    </div>
-                                </div>
-                                <div class="form-group row">
-                                    <div class="col-md-5">
-                                        @T("Admin.Orders.Products.Edit.ExclTax")
-                                    </div>
-                                    <div class="col-md-7">
-                                        <input name="pvDiscountExclTax@(item.Id)" type="text" value="@item.DiscountExclTaxValue" id="pvDiscountExclTax@(item.Id)" class="form-control input-sm"/>
-                                    </div>
-                                </div>
-                            </div>
-                        </td>
-                        <td style="width: 15%;" class="text-center">
-                            @if (Model.AllowCustomersToSelectTaxDisplayType)
-                            {
                                 <div>@Html.Raw(item.SubTotalInclTax)</div>
                                 <div>@Html.Raw(item.SubTotalExclTax)</div>
                             }
@@ -338,7 +337,50 @@
                                 </div>
                             </div>
                         </td>
-                        @if (!Model.IsLoggedInAsVendor)
+                        @if (Model.ShowPriceInfo)
+                        {
+                            <td align="center">
+                                <div>@item.PriceRate.ToString("F3", CultureInfo.InvariantCulture)</div>
+                            </td>
+
+                            <td align="center">
+                                <div>@item.PricePl.ToString("F2", CultureInfo.InvariantCulture)</div>
+                            </td>
+                            <td align="center">
+                                <div>@item.PriceUa.ToString("F2", CultureInfo.InvariantCulture)</div>
+                            </td>
+                        }
+                        <td align="center">
+                            <div>@item.AvailabilityInKyiv</div>
+                        </td>
+
+
+                        <td align="center" bgcolor="#ffff99">
+                            <div>@item.AvailabilityInKrakow</div>
+                        </td>
+
+                        <td align="center">
+                            <div>@item.AvailabilityInLublin</div>
+                        </td>
+
+
+                        <td align="center">
+                            <div>@item.ForecastInPoland</div>
+                        </td>
+                        <td align="center">
+                            <div>@item.AvailabilityInLviv</div>
+                        </td>
+                        <td style="width: 10%;">
+                            <div>@item.AvailabilityInLvivExpectation</div>
+                            <div id="pnlEditLvQuantity@(item.Id)">
+                                <div class="form-group">
+                                    <div class="col-md-8 col-md-offset-2">
+                                        <input name="lvQuantity@(item.Id)" type="text" value="@item.AvailabilityInLvivExpectation" id="lvQuantity@(item.Id)" class="form-control input-sm" />
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        @if (!Model.IsLoggedInAsVendor && !Model.IsAllLviv)
                         {
                             <td style="width: 15%;" class="text-center">
                                 <button type="submit" class="btn btn-default" name="btnEditOrderItem@(item.Id)" onclick="toggleOrderItemEdit@(item.Id)(true);return false;" id="btnEditOrderItem@(item.Id)">
@@ -378,7 +420,7 @@
             </div>
         </div>
     }
-    @if (!Model.IsLoggedInAsVendor)
+    @if (!Model.IsLoggedInAsVendor && !Model.IsAllLviv)
     {
         <div class="form-group row">
             <div class="col-md-12">

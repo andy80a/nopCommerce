@@ -77,6 +77,18 @@ namespace Nop.Web.Areas.Admin.Models.Orders
         public bool IsDownloadActivated { get; set; }
 
         public Guid LicenseDownloadGuid { get; set; }
+        public string KgPrice { get; set; }
+        public string ProductShortDescription { get; set; }
+        public double PriceRate { get; set; }
+        public decimal PricePl { get; set; }
+        public double PriceUa { get; set; }
+        public int AvailabilityInKyiv { get; set; }
+        public int AvailabilityInKrakow { get; set; }
+        public int AvailabilityInLublin { get; set; }
+        public int ForecastInPoland { get; set; }
+        public int AvailabilityInLviv { get; set; }
+        public string AvailabilityInLvivExpectation { get; set; }
+        public decimal KgPriceValue { get; set; }
 
         #endregion
 

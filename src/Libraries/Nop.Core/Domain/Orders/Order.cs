@@ -293,6 +293,8 @@ namespace Nop.Core.Domain.Orders
         /// </summary>
         public virtual int? RedeemedRewardPointsEntryId { get; set; }
 
+        public bool IsAllLviv { get; set; }
+
         #endregion
 
         #region Custom properties
