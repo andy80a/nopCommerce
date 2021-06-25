@@ -16,6 +16,8 @@ using Nop.Core.Domain.Orders;
 using Nop.Core.Domain.Payments;
 using Nop.Core.Domain.Shipping;
 using Nop.Core.Domain.Tax;
+using Nop.Core.Infrastructure;
+using Nop.Data;
 using Nop.Services.Affiliates;
 using Nop.Services.Catalog;
 using Nop.Services.Common;
@@ -1977,6 +1979,61 @@ namespace Nop.Web.Areas.Admin.Factories
                 model.ImportDuty = "невідомо";
             }
         }
+
+        public async Task<EkvListModel> PrepareEkvListModelAsync(EkvSearchModel searchModel)
+        {
+            if (searchModel == null)
+                throw new ArgumentNullException(nameof(searchModel));
+
+            var currentTimeZone = await _dateTimeHelper.GetCurrentTimeZoneAsync();
+            DateTime? startDateValue = (searchModel.StartDate == null) ? null
+                : _dateTimeHelper.ConvertToUtcTime(searchModel.StartDate.Value, currentTimeZone);
+
+            if (startDateValue == null)
+            {
+                startDateValue = _dateTimeHelper.ConvertToUtcTime(DateTime.Now.Date);
+            }
+            
+            DateTime? endDateValue = (searchModel.EndDate == null) ? null
+                : _dateTimeHelper.ConvertToUtcTime(searchModel.EndDate.Value.AddDays(1));
+            if (endDateValue == null)
+            {
+                endDateValue = _dateTimeHelper.ConvertToUtcTime(DateTime.Now.Date.AddDays(1));
+            }
+
+
+            var dbContext = EngineContext.Current.Resolve<INopDataProvider>();
+
+            var list = (await dbContext.QueryAsync<EkvModel>(@"
+            declare @from datetime, @to datetime
+            set @from = @dateFrom
+            set @to = @dateTo
+
+            SELECT o.Id, OrderTotal,
+
+                ISNull((SELECT top 1 1/cast(Replace(note, 'Курс:', '') as decimal(18, 4)) FROM OrderNote where note like '%Курс%' and DisplayToCustomer = 0
+                and OrderId = o.id
+                ), 0.0) as ExchangeRate,
+
+                OrderTotal * 0.95 * 
+                ISNull(
+                (SELECT top 1 cast(Replace(note, 'Курс:', '') as decimal(18, 4)) FROM OrderNote where note like '%Курс%' and DisplayToCustomer = 0
+                and OrderId = o.id), 0.0) as Total,
+                (SELECT TOP 1 CreatedOnUtc FROM OrderNote where note like '%ekv%'and DisplayToCustomer = 0 and OrderId = o.id) as DateCreated
+
+            FROM [order] o  where id in 
+            (
+                SELECT OrderId FROM OrderNote where note like '%ekv%' and DisplayToCustomer = 0 
+                and CreatedOnUtc >= @from and CreatedOnUtc <= @to
+            )
+            order by DateCreated DESC", new LinqToDB.Data.DataParameter("dateFrom", startDateValue),
+                new LinqToDB.Data.DataParameter("dateTo", endDateValue))).ToPagedList(searchModel);
+
+            //prepare list model
+            var model = new EkvListModel().PrepareToGrid(searchModel, list, () => list);
+            return model;
+        }
+
         #endregion
     }
 }

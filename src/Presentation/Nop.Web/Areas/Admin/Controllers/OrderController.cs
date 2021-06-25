@@ -2765,5 +2765,51 @@ namespace Nop.Web.Areas.Admin.Controllers
         }
 
         #endregion
+
+        #region Extra
+        public async Task<IActionResult> EkvAsync()
+        {
+            var authorize = await _permissionService.AuthorizeAsync(StandardPermissionProvider.ManageOrders);
+            if (!authorize)
+                return AccessDeniedView();
+
+            var model = new EkvSearchModel();
+            model.SetGridPageSize(int.MaxValue);
+
+            return View(model);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> EkvListAsync(EkvSearchModel searchModel)
+        {
+            var authorize = await _permissionService.AuthorizeAsync(StandardPermissionProvider.ManageOrders);
+            if (!authorize)
+                return AccessDeniedView();
+
+            //prepare model
+            var model = await _orderModelFactory.PrepareEkvListModelAsync(searchModel);
+
+            return Json(model);
+        }
+
+        [HttpPost]
+        public virtual async Task<IActionResult> EkvReportAggregatesAsync(EkvSearchModel searchModel)
+        {
+            searchModel.SetGridPageSize(int.MaxValue);
+            if (!await _permissionService.AuthorizeAsync(StandardPermissionProvider.ManageOrders))
+                return await AccessDeniedDataTablesJson();
+
+            //prepare model
+            var fullModel = (await _orderModelFactory.PrepareEkvListModelAsync(searchModel)).Data.ToList();
+            var model = new EkvAggreratorModel
+            {
+                aggregatorCount = fullModel.Count.ToString(),
+                aggregatorTotalPln = fullModel.Sum(ekv => ekv.Total).ToString("F2"),
+                aggregatorTotalUah = fullModel.Sum(ekv => ekv.OrderTotal).ToString("F2")
+            };
+            return Json(model);
+        }
+
+        #endregion
     }
 }
