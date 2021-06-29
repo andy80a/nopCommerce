@@ -142,3 +142,41 @@ Theme colors
 
     INsert into LocaleStringResource ([LanguageId], [ResourceName], [ResourceValue])
   Values (4,'Address.Fields.Apartment', 'Квартира')
+  
+    UPdate [dbo].[LocaleStringResource]
+  SET [ResourceValue] = 'Перейти к оформлению заказа' 
+  WHERE LanguageId=2 AND ResourceName='Checkout.Button'
+
+    UPdate [dbo].[LocaleStringResource]
+  SET [ResourceValue] = 'Перейти до оформлення замовлення' 
+  WHERE LanguageId=4 AND ResourceName='Checkout.Button'
+  
+    UPdate [dbo].[LocaleStringResource]
+  SET [ResourceValue] = 'Кількість' 
+  WHERE LanguageId=4 AND ResourceName='ShoppingCart.Quantity'
+  
+    UPdate [dbo].[LocaleStringResource]
+  SET [ResourceValue] = 'Удалить' 
+  WHERE LanguageId=2 AND Resourcevalue='убрать'
+  
+    UPdate [dbo].[LocaleStringResource]
+  SET [ResourceValue] = 'Скидки и подарочные сертификаты' 
+  WHERE LanguageId=2 AND ResourceName='shoppingcart.discountandvouchers'
+
+    UPdate [dbo].[LocaleStringResource]
+  SET [ResourceValue] = 'Знижки і подарункові сертифікати' 
+  WHERE LanguageId=4 AND ResourceName='shoppingcart.discountandvouchers'
+  
+    INsert into [LocaleStringResource] ([LanguageId], [ResourceName], [ResourceValue])
+  Values (2,'plugins.payment.cashondelivery.paymentmethoddescription',  'На карту или счет, реквизиты приходят на эл.почту')
+
+    INsert into LocaleStringResource ([LanguageId], [ResourceName], [ResourceValue])
+  Values (4,'plugins.payment.cashondelivery.paymentmethoddescription', 'На картку або рахунок, реквізити надходять на ел.пошту')
+
+
+  INsert into [LocaleStringResource] ([LanguageId], [ResourceName], [ResourceValue])
+  Values (2,'Plugins.Payment.CashOnDeliveryPostpay.PaymentMethodDescription',  'Служба доставки возьмет за пересылку денег 2% от суммы + 40 грн.')
+
+    INsert into LocaleStringResource ([LanguageId], [ResourceName], [ResourceValue])
+  Values (4,'Plugins.Payment.CashOnDeliveryPostpay.PaymentMethodDescription', 'Служба доставки візьме за пересилку грошей 2% від суми + 20 грн')
+

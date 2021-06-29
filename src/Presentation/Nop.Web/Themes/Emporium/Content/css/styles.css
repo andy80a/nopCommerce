@@ -7101,11 +7101,6 @@ label[for="Newsletter"],
 	text-align: left;
 }
 
-.cart-options .checkout-attributes dl {
-	max-width: 400px;
-	margin: 0 auto;
-}
-
 .cart-options .checkout-attributes dt {
 	margin: 0 0 5px;
 	font-weight: bold;
@@ -7316,11 +7311,10 @@ label[for="Newsletter"],
 .cart-collaterals .coupon-code input[type="email"],
 .cart-collaterals .coupon-code input[type="tel"] {
 	float: left;
-	width: calc(100% - 105px);
 }
 .cart-collaterals .coupon-code button {
 	float: left;
-	width: 100px;
+	
 	padding: 0 15px;
 	height: 45px;
 	margin: 0 0 0 5px;
@@ -7593,7 +7587,7 @@ label[for="Newsletter"],
 	border: 1px solid #eee;
 	border-radius: 3px;
 	padding: 22px 22px 22px 70px;
-	max-width: 560px;
+	max-width: 860px;
 	text-align: left;
 	margin: 0 auto 10px;
 }
@@ -9692,10 +9686,7 @@ td.latest-post {
         vertical-align: sub
     }
 
-.totals > div,
-.cart-options .checkout-attributes dl{
-    max-width:600px
-}
+
 .checkout-attributes textarea {
     width: 100%
 }
@@ -9757,3 +9748,7 @@ td.latest-post {
 .bingc-powered-by {
      display: none!important; 
 }
+
+
+
+

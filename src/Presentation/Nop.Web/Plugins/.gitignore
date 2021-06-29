@@ -1,0 +1,16 @@
+/ExternalAuth.Facebook
+/MultiFactorAuth.GoogleAuthenticator
+/ExchangeRate.EcbExchange
+/Payments.CashOnDelivery
+/DiscountRules.CustomerRoles
+/Payments.CashOnDeliveryPostpay
+/Payments.Manual
+/Pickup.PickupInStore
+/Shipping.FixedByWeightByTotal
+/Shipping.ShipStation
+/Tax.FixedOrByCountryStateZip
+/Widgets.AccessiBe
+/Widgets.FacebookPixel
+/Widgets.GoogleAnalytics
+/Payments.PayPalSmartPaymentButtons
+/Payments.PayPalStandard
