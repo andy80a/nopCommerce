@@ -63,5 +63,12 @@ namespace Nop.Services.Catalog
                 _ => productsQuery.OrderBy(p => p.DisplayOrder).ThenBy(p => p.Id)
             };
         }
+
+        public static Task<int> GetLvivStockQuantity(this Product product)
+        {
+            IProductService _productService = EngineContext.Current.Resolve<IProductService>();
+            return _productService.GetLvivStockQuantityAsync(product);
+          
+        }
     }
 }

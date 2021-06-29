@@ -87,6 +87,30 @@
             </div>
             <div class="form-group row">
                 <div class="col-md-3">
+                    <nop-label asp-for="IsAllLviv" />
+                </div>
+                <div class="col-md-9">
+                    <div class="form-text-row">@Model.IsAllLviv</div>
+                </div>
+            </div>
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="OrderKgPrice" />
+                </div>
+                <div class="col-md-9">
+                    <div class="form-text-row">@Model.OrderKgPrice</div>
+                </div>
+            </div>
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="OrderTotalWeight" />
+                </div>
+                <div class="col-md-9">
+                    <div class="form-text-row">@Model.OrderTotalWeight</div>
+                </div>
+            </div>
+            <div class="form-group row">
+                <div class="col-md-3">
                     <nop-label asp-for="CreatedOn" />
                 </div>
                 <div class="col-md-9">
@@ -357,6 +381,14 @@
                 </div>
                 <div class="col-md-9">
                     <div class="form-text-row">@Html.Raw(Model.OrderTotal)</div>
+                </div>
+            </div>
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="ImportDuty" />
+                </div>
+                <div class="col-md-9">
+                    <div class="form-text-row">@Html.Raw(Model.ImportDuty)</div>
                 </div>
             </div>
             @if (!string.IsNullOrEmpty(Model.RefundedAmount))

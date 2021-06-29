@@ -105,6 +105,7 @@ namespace Nop.Web.Areas.Admin.Models.Orders
 
         public bool HideStoresList { get; set; }
 
+        public bool ShowGrandtotal { get; set; }
         #endregion
     }
 }

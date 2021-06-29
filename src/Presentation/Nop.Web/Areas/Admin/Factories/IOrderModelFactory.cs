@@ -218,5 +218,7 @@ namespace Nop.Web.Areas.Admin.Factories
         /// The task result contains the incomplete order report list model
         /// </returns>
         Task<OrderIncompleteReportListModel> PrepareOrderIncompleteReportListModelAsync(OrderIncompleteReportSearchModel searchModel);
+
+        Task<EkvListModel> PrepareEkvListModelAsync(EkvSearchModel searchModel);
     }
 }

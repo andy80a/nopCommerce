@@ -16,6 +16,8 @@ using Nop.Core.Domain.Orders;
 using Nop.Core.Domain.Payments;
 using Nop.Core.Domain.Shipping;
 using Nop.Core.Domain.Tax;
+using Nop.Core.Infrastructure;
+using Nop.Data;
 using Nop.Services.Affiliates;
 using Nop.Services.Catalog;
 using Nop.Services.Common;
@@ -250,8 +252,25 @@ namespace Nop.Web.Areas.Admin.Factories
                     DiscountExclTaxValue = orderItem.DiscountAmountExclTax,
                     SubTotalInclTaxValue = orderItem.PriceInclTax,
                     SubTotalExclTaxValue = orderItem.PriceExclTax,
-                    AttributeInfo = orderItem.AttributeDescription
+                    AttributeInfo = orderItem.AttributeDescription,
+
+                    ProductShortDescription = product.ShortDescription,
+                    AvailabilityInLvivExpectation = product.AvailabilityInLvivExpectation == null ? "" : product.AvailabilityInLvivExpectation.ToString(),
+                    AvailabilityInKrakow = product.AvailabilityInKrakow,
+                    PricePl = product.CostUa ?? 0,
+                    PriceRate = (double)product.PriceRate2,
+                    AvailabilityInKyiv = product.AvailabilityInKyiv,
+                    AvailabilityInLublin = product.AvailabilityInLublin2,
+                    AvailabilityInLviv = await product.GetLvivStockQuantityAsync(),
+                    ForecastInPoland = product.ForecastInPoland
                 };
+
+                if ((product.PriceUa ?? 0) > 0)
+                {
+                    orderItemModel.PriceUa = (double)(product.PriceUa ?? 0) + (product.PriceUa.HasValue ? (double)product.Weight * 2 : 0);
+                }
+                orderItemModel.KgPriceValue = (product.PricePl ?? 0) / (product.Weight == 0 ? (decimal)0.01 : product.Weight);
+                orderItemModel.KgPrice = orderItemModel.KgPriceValue.ToString("F2");
 
                 //fill in additional values (not existing in the entity)
                 orderItemModel.Sku = await _productService.FormatSkuAsync(product, orderItem.AttributesXml);
@@ -938,6 +957,9 @@ namespace Nop.Web.Areas.Admin.Factories
 
             searchModel.HideStoresList = _catalogSettings.IgnoreStoreLimitations || searchModel.AvailableStores.SelectionIsNotPossible();
 
+            var currentCustomer = await _workContext.GetCurrentCustomerAsync();
+            searchModel.ShowGrandtotal = currentCustomer.Id == 1;
+
             return searchModel;
         }
 
@@ -1004,6 +1026,7 @@ namespace Nop.Web.Areas.Admin.Factories
                         CustomerEmail = billingAddress.Email,
                         CustomerFullName = $"{billingAddress.FirstName} {billingAddress.LastName}",
                         CustomerId = order.CustomerId,
+                        IsAllLviv = order.IsAllLviv,
                         CustomOrderNumber = order.CustomOrderNumber
                     };
 
@@ -1160,6 +1183,8 @@ namespace Nop.Web.Areas.Admin.Factories
                 //prepare nested search model
                 PrepareOrderShipmentSearchModel(model.OrderShipmentSearchModel, order);
                 PrepareOrderNoteSearchModel(model.OrderNoteSearchModel, order);
+
+                await PrepareExtraModelFieldsAsync(model, order);
             }
 
             model.IsLoggedInAsVendor = await _workContext.GetCurrentVendorAsync() != null;
@@ -1919,6 +1944,93 @@ namespace Nop.Web.Areas.Admin.Factories
 
             //prepare list model
             var model = new OrderIncompleteReportListModel().PrepareToGrid(searchModel, pagedList, () => pagedList);
+            return model;
+        }
+
+        private async Task PrepareExtraModelFieldsAsync(OrderModel model, Order order)
+        {
+            model.IsAllLviv = order.IsAllLviv;
+            var currentCustomer = await _workContext.GetCurrentCustomerAsync();
+            model.AllowEditLvQuantity = currentCustomer.Id == 1;
+            model.ShowPriceInfo = currentCustomer.Id == 1;
+
+            decimal totalPricePl = 0;
+            decimal totalWeight = 0;
+            decimal totalPriceRate2 = 0;
+
+            //get order items
+            var orderItems = await _orderService.GetOrderItemsAsync(order.Id, vendorId: (await _workContext.GetCurrentVendorAsync())?.Id ?? 0);
+            foreach (var orderItem in orderItems)
+            {
+                var product = await _productService.GetProductByIdAsync(orderItem.ProductId);
+                totalPricePl = totalPricePl + (product.PricePl ?? 0) * orderItem.Quantity;
+                totalWeight = totalWeight + product.Weight * orderItem.Quantity;
+                totalPriceRate2 += (product.PricePl ?? 0) * orderItem.Quantity * product.PriceRate2;
+            }
+
+            model.OrderKgPrice = (totalPricePl / totalWeight).ToString("F2");
+            model.OrderTotalWeight = totalWeight.ToString("F2");
+            if (totalPricePl > 0)
+            {
+                model.ImportDuty = (totalPriceRate2 / totalPricePl).ToString("F3");
+            }
+            else
+            {
+                model.ImportDuty = "невідомо";
+            }
+        }
+
+        public async Task<EkvListModel> PrepareEkvListModelAsync(EkvSearchModel searchModel)
+        {
+            if (searchModel == null)
+                throw new ArgumentNullException(nameof(searchModel));
+
+            var currentTimeZone = await _dateTimeHelper.GetCurrentTimeZoneAsync();
+            DateTime? startDateValue = (searchModel.StartDate == null) ? null
+                : _dateTimeHelper.ConvertToUtcTime(searchModel.StartDate.Value, currentTimeZone);
+
+            if (startDateValue == null)
+            {
+                startDateValue = _dateTimeHelper.ConvertToUtcTime(DateTime.Now.Date);
+            }
+            
+            DateTime? endDateValue = (searchModel.EndDate == null) ? null
+                : _dateTimeHelper.ConvertToUtcTime(searchModel.EndDate.Value.AddDays(1));
+            if (endDateValue == null)
+            {
+                endDateValue = _dateTimeHelper.ConvertToUtcTime(DateTime.Now.Date.AddDays(1));
+            }
+
+
+            var dbContext = EngineContext.Current.Resolve<INopDataProvider>();
+
+            var list = (await dbContext.QueryAsync<EkvModel>(@"
+            declare @from datetime, @to datetime
+            set @from = @dateFrom
+            set @to = @dateTo
+
+            SELECT o.Id, OrderTotal,
+
+                ISNull((SELECT top 1 1/cast(Replace(note, 'Курс:', '') as decimal(18, 4)) FROM OrderNote where note like '%Курс%' and DisplayToCustomer = 0
+                and OrderId = o.id
+                ), 0.0) as ExchangeRate,
+
+                OrderTotal * 0.95 * 
+                ISNull(
+                (SELECT top 1 cast(Replace(note, 'Курс:', '') as decimal(18, 4)) FROM OrderNote where note like '%Курс%' and DisplayToCustomer = 0
+                and OrderId = o.id), 0.0) as Total,
+                (SELECT TOP 1 CreatedOnUtc FROM OrderNote where note like '%ekv%'and DisplayToCustomer = 0 and OrderId = o.id) as DateCreated
+
+            FROM [order] o  where id in 
+            (
+                SELECT OrderId FROM OrderNote where note like '%ekv%' and DisplayToCustomer = 0 
+                and CreatedOnUtc >= @from and CreatedOnUtc <= @to
+            )
+            order by DateCreated DESC", new LinqToDB.Data.DataParameter("dateFrom", startDateValue),
+                new LinqToDB.Data.DataParameter("dateTo", endDateValue))).ToPagedList(searchModel);
+
+            //prepare list model
+            var model = new EkvListModel().PrepareToGrid(searchModel, list, () => list);
             return model;
         }
 
