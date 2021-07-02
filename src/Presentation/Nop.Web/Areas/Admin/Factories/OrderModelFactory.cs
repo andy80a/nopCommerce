@@ -2075,6 +2075,97 @@ ORDER BY Id
             });
         }
 
+        public async Task<PackStatsListModel> PreparePackStatsListModelAsync(PackStatsSearchModel searchModel)
+        {
+            var dbContext = EngineContext.Current.Resolve<INopDataProvider>();
+
+            var list = (await dbContext.QueryAsync<PackStatsModel>(@"
+declare @from datetime, @to datetime
+set @from = @dateFrom
+set @to = @dateTo
+
+
+
+select Name, Sum(PackageCount) as PackageCount , sum(Weight) as Weight , sum(VolumeWeight) as VolumeWeight, sum(ItemsCount)  as ItemsCount
+from
+(
+select Max(b.name) as Name, sum(koef) as PackageCount, ISNull(cast(sum ([Weight]) - sum(MarkedWeight)as decimal), 0.0) as Weight, 
+ISNull(cast(sum (Volumeweight) - sum(MarkedVolumeWeight)as decimal), 0.0) as VolumeWeight,
+ISNull(cast(Sum([ItemsCount]) - Sum([MarkedItemsCount]) as decimal), 0.0) as ItemsCount 
+
+from
+(
+
+select o1.OrderId, koef, Replace(Replace(o1.Note, 'Packed by: ', ''), 'Stared packing by: ', '') as name, 
+cast (Replace(
+( 
+SELECT TOP 1 Note
+FROM ordernote
+WHERE OrderId = o1.OrderId AND Note like 'Проклеєна вага%'
+ORDER BY ID DESC),'Проклеєна вага:', '') as float) * Koef as MarkedWeight,
+
+cast (Replace(
+( 
+SELECT TOP 1 Note
+FROM ordernote
+WHERE OrderId = o1.OrderId AND Note like 'Проклеєна обємна вага%'
+ORDER BY ID DESC),'Проклеєна обємна вага:', '') as float) * Koef as MarkedVolumeWeight,
+
+cast (Replace(
+( 
+SELECT TOP 1 Note
+FROM ordernote
+WHERE OrderId = o1.OrderId AND Note like 'Volumeweight%'
+ORDER BY ID DESC),'Volumeweight:', '')  as float) * Koef as Volumeweight,
+
+cast (Replace(
+( 
+SELECT TOP 1 Note
+FROM ordernote
+WHERE OrderId = o1.OrderId AND Note like 'weight%'
+ORDER BY ID DESC),'weight:', '')  as float) * Koef as [Weight],
+
+
+cast (Replace(
+( 
+SELECT TOP 1 Note
+FROM ordernote
+WHERE OrderId = o1.OrderId AND Note like 'Проклеєна кількість артикулів:%'
+ORDER BY ID DESC),'Проклеєна кількість артикулів:', '')  as float)* Koef as [MarkedItemsCount],
+
+cast (Replace(
+( 
+SELECT TOP 1 Note
+FROM ordernote
+WHERE OrderId = o1.OrderId AND Note like 'Загальна кількість артикулів%'
+ORDER BY ID DESC),'Загальна кількість артикулів:', '')  as float) * Koef as [ItemsCount]
+
+from 
+(
+SELECT  orderid, note, max(id) as id, case when  Note like 'Packed by: %' then 0.9 else (case when exists (select * from OrderNote where Note like 'Stared packing by: %' and OrderId = n1.OrderId and CreatedOnUtc < @from) then 0 else 0.1 end) end as Koef
+from  ordernote n1 
+WHERE CreatedOnUtc > @from and  CreatedOnUtc < @to AND (Note like 'Packed by: %' OR Note like 'Stared packing by: %')
+
+
+group by OrderId, note  
+
+) o1
+
+)b 
+group by OrderId
+) c
+Group by Name
+ORDER BY Sum([ItemsCount])	DESC
+
+
+
+", new DataParameter("dateFrom", DateTime.Now.Date), new DataParameter("dateTo", DateTime.Now.AddDays(1)))
+                ).ToPagedList(searchModel);
+
+            //prepare list model
+            var model = new PackStatsListModel().PrepareToGrid(searchModel, list, () => list);
+            return model;
+        }
         #endregion
     }
 }

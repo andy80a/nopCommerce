@@ -2836,6 +2836,21 @@ namespace Nop.Web.Areas.Admin.Controllers
 
             return Json(model);
         }
+
+        public IActionResult PackStats()
+        {
+            var model = new PackStatsSearchModel();
+            model.SetGridPageSize(int.MaxValue);
+
+            return View(model);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> PackStatsListAsync(PackStatsSearchModel searchModel)
+        {
+            var model = await _orderModelFactory.PreparePackStatsListModelAsync(searchModel);
+            return Json(model);
+        }
         #endregion
     }
 }

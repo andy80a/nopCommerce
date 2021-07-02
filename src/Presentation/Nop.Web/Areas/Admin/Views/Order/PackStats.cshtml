@@ -1,0 +1,66 @@
+﻿@model PackStatsSearchModel
+@{
+    //page title
+    ViewBag.Title = "Статистика по пакуванню за сьогодні";
+    Html.SetActiveMenuItemSystemName("PackStats");
+}
+
+<div class="content-header clearfix">
+    <h1 class="float-left">
+        Статистика по пакуванню за сьогодні
+    </h1>
+</div>
+
+<script type="text/javascript">
+    setInterval(function() {
+        window.location.reload();
+    }, 120000);
+</script>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="form-horizontal">
+            <div class="cards-group">
+                <div class="card card-default">
+                    <div class="card-body">
+                        @await Html.PartialAsync("Table", new DataTablesModel
+                        {
+                            Name = "call-required-grid",
+                            UrlRead = new DataUrl("PackStatsList", "Order", null),
+                            Length = Model.PageSize,
+                            LengthMenu = Model.AvailablePageSizes,
+                            ColumnCollection = new List<ColumnProperty>
+                            {
+                                new ColumnProperty(nameof(PackStatsModel.Name))
+                                {
+                                    Title = "Пакувальник",
+                                    Width = "10"
+                                },
+                                new ColumnProperty(nameof(PackStatsModel.PackageCount))
+                                {
+                                    Title = "Посилки",
+                                    Width = "200"
+                                },
+                                new ColumnProperty(nameof(PackStatsModel.Weight))
+                                {
+                                    Title = "Вага",
+                                    Width = "300"
+                                },
+                                new ColumnProperty(nameof(PackStatsModel.VolumeWeight))
+                                {
+                                    Title = "ОбємнаВага",
+                                    Width = "200",
+                                },
+                                new ColumnProperty(nameof(PackStatsModel.ItemsCount))
+                                {
+                                    Title = "Артикули",
+                                    Width = "200",
+                                }
+                            },
+                        })
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

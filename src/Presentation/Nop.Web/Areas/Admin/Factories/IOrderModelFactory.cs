@@ -221,5 +221,6 @@ namespace Nop.Web.Areas.Admin.Factories
 
         Task<EkvListModel> PrepareEkvListModelAsync(EkvSearchModel searchModel);
         Task<OrderListModel> PrepareCallRequiredListModelAsync(CallRequiredSearchModel searchModel);
+        Task<PackStatsListModel> PreparePackStatsListModelAsync(PackStatsSearchModel model);
     }
 }
