@@ -1,0 +1,75 @@
+﻿@model CallRequiredSearchModel
+@{
+    //page title
+    ViewBag.Title = "Замовлення які потрібно обдзвонити";
+    Html.SetActiveMenuItemSystemName("CallRequired");
+}
+
+<div class="content-header clearfix">
+    <h1 class="float-left">
+        @T("Admin.Orders")
+    </h1>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="form-horizontal">
+            <div class="cards-group">
+                <div class="card card-default">
+                    <div class="card-body">
+                        @await Html.PartialAsync("Table", new DataTablesModel
+                        {
+                            Name = "call-required-grid",
+                            UrlRead = new DataUrl("CallRequiredList", "Order", null),
+                            Length = Model.PageSize,
+                            LengthMenu = Model.AvailablePageSizes,
+                            ColumnCollection = new List<ColumnProperty>
+                            {
+                                new ColumnProperty(nameof(OrderModel.Id))
+                                {
+                                    IsMasterCheckBox = true,
+                                    Render = new RenderCheckBox("checkbox_orders"),
+                                    ClassName = NopColumnClassDefaults.CenterAll,
+                                    Width = "50"
+                                },
+                                new ColumnProperty(nameof(OrderModel.Id))
+                                {
+                                    Title = T("Admin.Orders.Fields.CustomOrderNumber").Text,
+                                    Width = "50"
+                                },
+                                new ColumnProperty(nameof(OrderModel.PaymentStatus))
+                                {
+                                    Title = T("Admin.Orders.Fields.PaymentStatus").Text,
+                                    Width = "200"
+                                },
+                                new ColumnProperty(nameof(OrderModel.CustomerFullName))
+                                {
+                                    Title = T("Admin.Orders.Fields.Customer").Text,
+                                    Width = "300"
+                                },
+                                new ColumnProperty(nameof(OrderModel.OrderTotal))
+                                {
+                                    Title = T("Admin.Orders.Fields.OrderTotal").Text,
+                                    Width = "200",
+                                },
+                                new ColumnProperty(nameof(OrderModel.CreatedOn))
+                                {
+                                    Title = T("Admin.Orders.Fields.CreatedOn").Text,
+                                    Width = "200",
+                                    Render = new RenderDate()
+                                },
+                                new ColumnProperty(nameof(OrderModel.Id))
+                                {
+                                    Title = T("Admin.Common.View").Text,
+                                    Width = "100",
+                                    ClassName = NopColumnClassDefaults.Button,
+                                    Render = new RenderButtonView(new DataUrl("Edit"))
+                                }
+                            },
+                        })
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

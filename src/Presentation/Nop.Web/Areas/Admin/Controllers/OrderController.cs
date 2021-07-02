@@ -29,6 +29,7 @@ using Nop.Web.Areas.Admin.Infrastructure.Mapper.Extensions;
 using Nop.Web.Areas.Admin.Models.Orders;
 using Nop.Web.Areas.Admin.Models.Reports;
 using Nop.Web.Framework.Controllers;
+using Nop.Web.Framework.Models;
 using Nop.Web.Framework.Mvc;
 using Nop.Web.Framework.Mvc.Filters;
 
@@ -2810,6 +2811,31 @@ namespace Nop.Web.Areas.Admin.Controllers
             return Json(model);
         }
 
+        public async Task<IActionResult> CallRequiredAsync()
+        {
+            var authorize = await _permissionService.AuthorizeAsync(StandardPermissionProvider.ManageOrders);
+            if (!authorize)
+                return AccessDeniedView();
+
+            var model = new CallRequiredSearchModel();
+            model.SetGridPageSize(int.MaxValue);
+
+            return View(model);
+        }
+
+        
+        [HttpPost]
+        public async Task<IActionResult> CallRequiredListAsync(CallRequiredSearchModel searchModel)
+        {
+            var authorize = await _permissionService.AuthorizeAsync(StandardPermissionProvider.ManageOrders);
+            if (!authorize)
+                return AccessDeniedView();
+
+            //prepare model
+            var model = await _orderModelFactory.PrepareCallRequiredListModelAsync(searchModel);
+
+            return Json(model);
+        }
         #endregion
     }
 }

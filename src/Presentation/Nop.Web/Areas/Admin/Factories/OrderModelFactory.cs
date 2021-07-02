@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using LinqToDB.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -2026,12 +2027,52 @@ namespace Nop.Web.Areas.Admin.Factories
                 SELECT OrderId FROM OrderNote where note like '%ekv%' and DisplayToCustomer = 0 
                 and CreatedOnUtc >= @from and CreatedOnUtc <= @to
             )
-            order by DateCreated DESC", new LinqToDB.Data.DataParameter("dateFrom", startDateValue),
-                new LinqToDB.Data.DataParameter("dateTo", endDateValue))).ToPagedList(searchModel);
+            order by DateCreated DESC", new DataParameter("dateFrom", startDateValue),
+                new DataParameter("dateTo", endDateValue))).ToPagedList(searchModel);
 
             //prepare list model
             var model = new EkvListModel().PrepareToGrid(searchModel, list, () => list);
             return model;
+        }
+
+        public async Task<OrderListModel> PrepareCallRequiredListModelAsync(CallRequiredSearchModel searchModel)
+        {
+            if (searchModel == null)
+                throw new ArgumentNullException(nameof(searchModel));
+
+            var dbContext = EngineContext.Current.Resolve<INopDataProvider>();
+
+            var ids = (await dbContext.QueryAsync<int>(@"
+select id FROM [order]
+where 
+CreatedOnUtc > @dateFrom and CreatedOnUtc < @dateTo
+and OrderStatusId = 10
+and id not in (select OrderId from OrderNote where DisplayToCustomer = 0 and note like '#%')
+and id not in (select OrderId from OrderNote where DisplayToCustomer = 0 and note like 'vv%')
+ORDER BY Id
+", new DataParameter("dateFrom", DateTime.Now.AddDays(-100)), new DataParameter("dateTo", DateTime.Now.AddDays(-2))))
+                .ToPagedList(searchModel);
+
+            return await new OrderListModel().PrepareToGridAsync(searchModel, ids, () =>
+            {
+                //fill in model values from the entity
+                return ids.SelectAwait(async id =>
+                {
+                    var order = await _orderService.GetOrderByIdAsync(id);
+                    var address = await _addressService.GetAddressByIdAsync(order.BillingAddressId);
+                    return new OrderModel
+                    {
+                        Id = order.Id,
+                        OrderTotal = await _priceFormatter.FormatPriceAsync(order.OrderTotal, true, false),
+                        OrderStatus = await _localizationService.GetLocalizedEnumAsync(order.OrderStatus),
+                        PaymentStatus = await _localizationService.GetLocalizedEnumAsync(order.PaymentStatus),
+                        ShippingStatus = await _localizationService.GetLocalizedEnumAsync(order.ShippingStatus),
+                        CustomerEmail = address.Email,
+                        CustomerFullName = $"{address.FirstName} {address.LastName} ({address.Email})",
+                        CreatedOn = await _dateTimeHelper.ConvertToUserTimeAsync(order.CreatedOnUtc, DateTimeKind.Utc),
+                    };
+                });
+            });
         }
 
         #endregion

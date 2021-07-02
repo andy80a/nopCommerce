@@ -220,5 +220,6 @@ namespace Nop.Web.Areas.Admin.Factories
         Task<OrderIncompleteReportListModel> PrepareOrderIncompleteReportListModelAsync(OrderIncompleteReportSearchModel searchModel);
 
         Task<EkvListModel> PrepareEkvListModelAsync(EkvSearchModel searchModel);
+        Task<OrderListModel> PrepareCallRequiredListModelAsync(CallRequiredSearchModel searchModel);
     }
 }
