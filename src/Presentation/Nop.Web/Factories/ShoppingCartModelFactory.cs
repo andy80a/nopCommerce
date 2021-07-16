@@ -389,6 +389,10 @@ namespace Nop.Web.Factories
                 ProductSeName = await _urlRecordService.GetSeNameAsync(product),
                 Quantity = sci.Quantity,
                 AttributeInfo = await _productAttributeFormatter.FormatAttributesAsync(product, sci.AttributesXml),
+
+                AvailabilityInKrakow = (product.AvailabilityInKrakow + product.AvailabilityInKatowice + product.AvailabilityInJanki + product.AvailabilityInTargowek + product.AvailabilityInLublin).ToString(),
+                AvailabilityInLviv = await product.GetLvivStockQuantity(),
+                AvailabilityInLvivForDisplay = await product.GetLvivStockQuantityForDisplayAsync(_workContext),
             };
 
             //allow editing?

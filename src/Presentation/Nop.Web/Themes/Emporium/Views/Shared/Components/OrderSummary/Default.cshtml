@@ -50,6 +50,8 @@
                         <col width="1" />
                         <col width="1" />
                         <col width="1" />
+                        <col width="1" />
+                        <col width="1" />
                     </colgroup>
                     <thead>
                         <tr class="cart-header-row">
@@ -80,6 +82,12 @@
                                     @T("ShoppingCart.VendorName")
                                 </th>
                             }
+                            <th>
+                                @T("Custom.Availability")<br>@T("Custom.KrakowDate")
+                            </th>
+                            <th>
+                                @T("Custom.LvivAvailability")
+                            </th>
                             <th class="unit-price" data-hide="w410, w480">
                                 @T("ShoppingCart.UnitPrice")
                             </th>
@@ -185,6 +193,12 @@
                                         <span class="vendor-name">@item.VendorName</span>
                                     </td>
                                 }
+                                <td>
+                                    @item.AvailabilityInKrakow @T("Custom.OneItem")
+                                </td>
+                                <td>
+                                    @item.AvailabilityInLvivForDisplay
+                                </td>
                                 <td class="unit-price">
                                     <label class="td-title">@T("ShoppingCart.UnitPrice"):</label>
                                     <span class="product-unit-price">@item.UnitPrice</span>
