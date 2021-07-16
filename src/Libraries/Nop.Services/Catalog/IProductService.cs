@@ -940,5 +940,8 @@ namespace Nop.Services.Catalog
 
         Task<int> GetLvivStockQuantityAsync(Product product);
         Task<IList<ComplementaryProduct>> GetComplementaryProductsByProductId1Async(int productId, bool showHidden = false);
+
+        IList<LvivStockQuantityHistory> GetAllLvivStockQuantityHistory(string articleNumber,
+            string goDirectlyToCustomOrderNumber);
     }
 }

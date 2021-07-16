@@ -3457,6 +3457,29 @@ namespace Nop.Web.Areas.Admin.Controllers
 
         #endregion
 
+        #region Lviv stock quantity history
+        public async Task<IActionResult> LvivStockQuantityHistoryAsync()
+        {
+            if (!await _permissionService.AuthorizeAsync(StandardPermissionProvider.ManageProducts))
+                return AccessDeniedView();
+
+            var model = new LvivStockQuantityHistorySearchModel();
+            model.SetGridPageSize(int.MaxValue);
+
+            return View(model);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> LvivStockQuantityHistoryListAsync(LvivStockQuantityHistorySearchModel searchModel)
+        {
+            if (!await _permissionService.AuthorizeAsync(StandardPermissionProvider.ManageProducts))
+                return await AccessDeniedDataTablesJson();
+
+            var model = _productModelFactory.PrepareLvivStockQuantityHistoryListModel(searchModel);
+            return Json(model);
+        }
+        #endregion
+
         #endregion
     }
 }

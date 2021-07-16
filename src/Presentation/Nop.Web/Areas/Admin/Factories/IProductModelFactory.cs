@@ -366,5 +366,7 @@ namespace Nop.Web.Areas.Admin.Factories
         /// </returns>
         Task<ProductAttributeCombinationModel> PrepareProductAttributeCombinationModelAsync(ProductAttributeCombinationModel model,
             Product product, ProductAttributeCombination productAttributeCombination, bool excludeProperties = false);
+
+        LvivStockQuantityHistoryListModel PrepareLvivStockQuantityHistoryListModel(LvivStockQuantityHistorySearchModel searchModel);
     }
 }

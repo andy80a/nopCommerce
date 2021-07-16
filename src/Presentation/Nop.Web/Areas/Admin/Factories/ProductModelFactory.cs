@@ -2404,6 +2404,52 @@ namespace Nop.Web.Areas.Admin.Factories
             return model;
         }
 
+        public LvivStockQuantityHistoryListModel PrepareLvivStockQuantityHistoryListModel(LvivStockQuantityHistorySearchModel searchModel)
+        {
+            var items = new List<LvivStockQuantityHistory>().ToPagedList(searchModel);
+            if (!string.IsNullOrWhiteSpace(searchModel.ArticleNumber) ||
+                !string.IsNullOrWhiteSpace(searchModel.GoDirectlyToCustomOrderNumber))
+            {
+                if (!string.IsNullOrWhiteSpace(searchModel.ArticleNumber))
+                {
+                    searchModel.ArticleNumber = searchModel.ArticleNumber.ToLower().Replace(".", "").Replace("s", "").Trim();
+                }
+                items = _productService.GetAllLvivStockQuantityHistory(
+                    searchModel.ArticleNumber,
+                    searchModel.GoDirectlyToCustomOrderNumber).ToPagedList(searchModel);
+            }
+
+            return new LvivStockQuantityHistoryListModel().PrepareToGrid(searchModel, items, () =>
+            {
+                var result = new List<LvivStockQuantityHistoryItemModel>();
+                int qrSum = 0, qaSum = 0;
+                foreach (var item in items)
+                {
+                    if (string.IsNullOrEmpty(searchModel.GoDirectlyToCustomOrderNumber))
+                    {
+                        qrSum += item.QuantityReserved;
+                        qaSum += item.QuantityAdjustment;
+                    }
+
+                    result.Add(new LvivStockQuantityHistoryItemModel
+                    {
+                        Id = item.Id,
+                        ArticleNumber = item.ArticleNumber,
+                        OrderId = item.OrderId,
+                        QuantityAdjustment = item.QuantityAdjustment,
+                        QuantityAdjustmentSum = qaSum,
+                        QuantityReserved = item.QuantityReserved,
+                        QuantityReservedSum = qrSum,
+                        Message = item.Message,
+                        CreatedOnUtc = item.CreatedOnUtc,
+                        UpdatedOnUtc = item.UpdatedOnUtc
+                    });
+                }
+
+                return result.OrderByDescending(r => r.Id);
+            });
+        }
+
         #endregion
     }
 }

@@ -2803,21 +2803,7 @@ namespace Nop.Services.Catalog
                 query = query.Where(s => s.OrderId == orderId);
             }
 
-
-            query = query.OrderBy(s => s.Id);
-            var result = query.ToList();
-            if (orderId == 0)
-            {
-                int qrSum = 0, qaSum = 0;
-                foreach (var item in result)
-                {
-                    qrSum = qrSum + item.QuantityReserved;
-                    item.QuantityReservedSum = qrSum;
-                    qaSum = qaSum + item.QuantityAdjustment;
-                    item.QuantityAdjustmentSum = qaSum;
-                }
-            }
-            return result.OrderByDescending(s => s.Id).ToList();
+            return query.OrderBy(s => s.Id).ToList();
         }
 
 

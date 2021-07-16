@@ -1,11 +1,9 @@
 ﻿using System;
+using Nop.Web.Framework.Models;
 
-namespace Nop.Core.Domain.Catalog
+namespace Nop.Web.Areas.Admin.Models.Catalog
 {
-    /// <summary>
-    /// Represents a stock quantity change entry
-    /// </summary>
-    public partial class LvivStockQuantityHistory : BaseEntity
+    public record LvivStockQuantityHistoryItemModel : BaseNopEntityModel
     {
         public string ArticleNumber { get; set; }
         public int? OrderId { get; set; }
@@ -14,6 +12,13 @@ namespace Nop.Core.Domain.Catalog
         /// Gets or sets the stock quantity adjustment
         /// </summary>
         public int QuantityAdjustment { get; set; }
+
+        /// <summary>
+        /// Gets or sets current stock quantity
+        /// </summary>
+        public int QuantityReservedSum { get; set; }
+
+        public int QuantityAdjustmentSum { get; set; }
 
         /// <summary>
         /// Gets or sets current stock quantity
@@ -32,4 +37,3 @@ namespace Nop.Core.Domain.Catalog
         public DateTime UpdatedOnUtc { get; set; }
     }
 }
-
